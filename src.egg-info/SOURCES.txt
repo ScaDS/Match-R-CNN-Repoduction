@@ -6,6 +6,7 @@ src.egg-info/SOURCES.txt
 src.egg-info/dependency_links.txt
 src.egg-info/top_level.txt
 src/data/__init__.py
+src/data/deepfashion2_to_coco.py
 src/data/make_dataset.py
 src/features/__init__.py
 src/features/build_features.py
