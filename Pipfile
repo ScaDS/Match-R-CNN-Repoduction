@@ -16,6 +16,8 @@ Sphinx = "*"
 pil = "*"
 image = "*"
 numpy = "*"
+tqdm = "*"
+detectron2 = "*"
 
 [requires]
 python_version = "*"
