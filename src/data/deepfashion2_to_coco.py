@@ -113,7 +113,7 @@ for num in tqdm(range(1, num_images + 1)):
                         'segmentation': seg,
                     })
 
-json_name = os.path.join(args.dest, 'deepfashion2_' + args.set + '.json')
+json_name = os.path.join(args.dest, 'deepfashion2_coco_' + args.set + '.json')
 with open(json_name, 'w') as f:
     json.dump(dataset, f)
 
