@@ -5,6 +5,6 @@ setup(
     packages=find_packages(),
     version='0.1.0',
     description='Reimplementation of Match R-CNN',
-    author='Stefn Schmidt-Dichte',
+    author='Stefan Schmidt-Dichte',
     license='MIT',
 )
