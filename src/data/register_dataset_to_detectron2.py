@@ -33,12 +33,6 @@ register_coco_instances("validation",
 train_metadata = MetadataCatalog.get('train')
 dataset_dicts = DatasetCatalog.get('train')
 
-for d in random.sample(dataset_dicts, 3):
-    img = cv2.imread(d['file_name'])
-    visualizer = Visualizer(img[:, :, ::-1], metadata=train_metadata, scale=0.5, instance_mode=ColorMode.IMAGE)
-    out = visualizer.draw_dataset_dict(d)
-    cv2.imshow('image', out.get_image()[:, :, ::-1])
-
 cfg = get_cfg()
 cfg.merge_from_file(model_zoo.get_config_file('COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml'))
 cfg.DATASETS.TRAIN = ('train',)
@@ -56,20 +50,11 @@ trainer = DefaultTrainer(cfg)
 trainer.resume_or_load(resume=False)
 trainer.train()
 
-# cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, 'model_final.pth')
-# cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
-# cfg.DATASETS.TEST = ('validation', )
-# predictor = DefaultPredictor(cfg)
-#
-# img = cv2.imread('demo/input.jpg')
-# outputs = predictor(img)
-#
-# for d in random.sample(dataset_dicts, 1):
-#     im = cv2.imread(d['file_name'])
-#     outputs = predictor(im)
-#     v = Visualizer(im[:, :, ::-1],
-#                    metadata=train_metadata,
-#                    scale=0.8,
-#                    instance_mode=ColorMode.IMAGE)
-#     out = v.draw_instance_predictions(outputs['instances'].to('cpu'))
-#     cv2.imwrite('demo/output_retrained.jpg', out.get_image()[:, :, ::-1])
+cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, 'model_final.pth')
+cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
+cfg.DATASETS.TEST = ('validation', )
+predictor = DefaultPredictor(cfg)
+
+img = cv2.imread('demo/input.jpg')
+outputs = predictor(img)
+
