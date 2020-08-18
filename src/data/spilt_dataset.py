@@ -9,7 +9,7 @@ from tqdm import tqdm
 import settings
 
 
-def get_pair_ids(annotations_dir):
+def get_pair_ids(annotations_dir: str) -> list:
     pair_ids = []
     for filename in tqdm(os.listdir(annotations_dir)):
         with open(os.path.join(annotations_dir, filename)) as json_file:
@@ -19,7 +19,7 @@ def get_pair_ids(annotations_dir):
     return np.unique(pair_ids)
 
 
-def get_image(pair_ids, annotations_dir):
+def get_image(pair_ids: list, annotations_dir: str) -> list:
     images = []
     for pair_id in tqdm(pair_ids):
         for filename in os.listdir(annotations_dir):
@@ -31,7 +31,7 @@ def get_image(pair_ids, annotations_dir):
     return images
 
 
-def split_dataset(data_dir, factor, seed):
+def split_dataset(data_dir: str, factor: float, seed: int):
 
     test_dir = os.path.join(os.path.dirname(data_dir), 'test')
     image_dir, annotations_dir = os.path.join(test_dir, 'image'), os.path.join(test_dir, 'annos')
