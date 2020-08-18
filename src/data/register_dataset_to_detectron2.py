@@ -1,13 +1,11 @@
 import cv2
 import os
-import random
 
 from detectron2.data import MetadataCatalog, DatasetCatalog
-from detectron2.engine import DefaultTrainer, DefaultPredictor
+from detectron2.engine import DefaultTrainer
 from detectron2.config import get_cfg
 from detectron2.model_zoo import model_zoo
 from detectron2.data.datasets import register_coco_instances
-from detectron2.utils.visualizer import Visualizer, ColorMode
 
 import settings
 
@@ -50,11 +48,4 @@ trainer = DefaultTrainer(cfg)
 trainer.resume_or_load(resume=False)
 trainer.train()
 
-cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, 'model_final.pth')
-cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
-cfg.DATASETS.TEST = ('validation', )
-predictor = DefaultPredictor(cfg)
-
-img = cv2.imread('demo/input.jpg')
-outputs = predictor(img)
 
