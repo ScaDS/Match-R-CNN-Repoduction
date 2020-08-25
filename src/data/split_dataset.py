@@ -10,17 +10,14 @@ import settings
 
 
 def make_image_dict(annotations_dir: str) -> dict:
-
-    image_dict = {}
     pair_ids = []
-
     for filename in tqdm(os.listdir(annotations_dir)):
         with open(os.path.join(annotations_dir, filename)) as json_file:
             data = json.load(json_file)
         pair_ids.append(data['pair_id'])
-
     pair_ids = np.unique(pair_ids)
 
+    image_dict = {}
     for i in pair_ids:
         image_dict.update({i: []})
 
@@ -43,6 +40,7 @@ def split_dataset(data_dir: str, factor: float, seed: int, pairs_dict: dict):
         pair_ids = list(pairs_dict.keys())
         random.seed(seed)
         random.shuffle(pair_ids)
+
         selected = []
         for pair_id in pair_ids[:int(len(pair_ids) * factor)]:
             selected.extend(pairs_dict[pair_id])
@@ -53,8 +51,7 @@ def split_dataset(data_dir: str, factor: float, seed: int, pairs_dict: dict):
         for img, anno in zip(selected_imgs, selected_annos):
             shutil.move(img, os.path.join(image_dir, os.path.split(img)[-1]))
             shutil.move(anno, os.path.join(annotations_dir, os.path.split(anno)[-1]))
-            print(f"Moved {len(selected)} images and annos from {data_dir} to {test_dir}.")
 
 
-p_dict = make_image_dict(settings.DATA_DIR, 'raw', 'train', 'annos')
+p_dict = make_image_dict(os.path.join(settings.DATA_DIR, 'raw', 'train', 'annos'))
 split_dataset(os.path.join(settings.DATA_DIR, 'raw', 'train'), 0.3, 7, p_dict)
