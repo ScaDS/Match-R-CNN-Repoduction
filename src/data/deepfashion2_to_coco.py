@@ -10,10 +10,10 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('-s',
                     '--set',
-                    help='choose between train and validation',
-                    choices=['train', 'validation'],
+                    help='choose between train, validation and test',
+                    choices=['train', 'validation', 'test'],
                     nargs='?',
-                    default='train')
+                    default='test')
 parser.add_argument('-d',
                     '--dest',
                     help='output dir',
@@ -42,14 +42,12 @@ for idx, e in enumerate(lst_name):
         'skeleton': []
     })
 
-
-num_images = len(os.listdir(os.path.join(settings.DATA_DIR, 'raw', args.set, 'image')))
+all_files = os.listdir(os.path.join(settings.DATA_DIR, 'raw', args.set, 'image'))
 sub_index = 0  # the index of ground truth instance
-for num in tqdm(range(1, num_images + 1)):
-    json_name = os.path.join(settings.DATA_DIR, 'raw', args.set, 'annos', str(num).zfill(6) + '.json')
-    image_name = os.path.join(settings.DATA_DIR, 'raw', args.set, 'image', str(num).zfill(6) + '.jpg')
-
-    if num >= 0:
+for file in tqdm(all_files):
+    json_name = os.path.join(settings.DATA_DIR, 'raw', args.set, 'annos', os.path.splitext(file)[0] + '.json')
+    image_name = os.path.join(settings.DATA_DIR, 'raw', args.set, 'image', file)
+    if int(os.path.splitext(file)[0]) >= 0:
         imag = Image.open(image_name)
         width, height = imag.size
         with open(json_name, 'r') as f:
@@ -59,9 +57,9 @@ for num in tqdm(range(1, num_images + 1)):
             dataset['images'].append({
                 'coco_url': '',
                 'date_captured': '',
-                'file_name': str(num).zfill(6) + '.jpg',
+                'file_name': file,
                 'flickr_url': '',
-                'id': num,
+                'id': os.path.splitext(file)[0],
                 'license': 0,
                 'width': width,
                 'height': height
@@ -105,7 +103,7 @@ for num in tqdm(range(1, num_images + 1)):
                         'category_id': cat,
                         'id': sub_index,
                         'pair_id': pair_id,
-                        'image_id': num,
+                        'image_id': os.path.splitext(file)[0],
                         'iscrowd': 0,
                         'style': style,
                         'num_keypoints': num_points,
