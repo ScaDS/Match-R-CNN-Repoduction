@@ -27,6 +27,15 @@ register_coco_instances("validation",
                                      'raw',
                                      'image',
                                      'validation'))
+register_coco_instances("test",
+                        {},
+                        os.path.join(settings.DATA_DIR,
+                                     'processed',
+                                     'deepfashion2_coco_test.json'),
+                        os.path.join(settings.DATA_DIR,
+                                     'raw',
+                                     'test',
+                                     'image'))
 
 train_metadata = MetadataCatalog.get('train')
 dataset_dicts = DatasetCatalog.get('train')
@@ -34,7 +43,7 @@ dataset_dicts = DatasetCatalog.get('train')
 cfg = get_cfg()
 cfg.merge_from_file(model_zoo.get_config_file('COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml'))
 cfg.DATASETS.TRAIN = ('train',)
-cfg.DATASETS.TEST = ()
+cfg.DATASETS.TEST = ('test',)
 cfg.DATALOADER.NUM_WORKERS = 2
 cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url('COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml')
 cfg.SOLVER.IMS_PER_BATCH = 2
