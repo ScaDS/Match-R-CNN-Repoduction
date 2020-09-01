@@ -46,8 +46,7 @@ dataset_dicts = DatasetCatalog.get('train')
 cfg = get_cfg()
 cfg.merge_from_file(model_zoo.get_config_file('COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml'))
 cfg.DATASETS.TRAIN = ('train',)
-cfg.DATASETS.TEST = ('test',)
-cfg.DATASETS.VAL = ('validation',)
+cfg.DATASETS.TEST = ('validation',)
 cfg.DATALOADER.NUM_WORKERS = 2
 cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url('COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml')
 cfg.SOLVER.IMS_PER_BATCH = 2
@@ -55,6 +54,7 @@ cfg.SOLVER.BASE_LR = 0.02
 cfg.SOLVER.MAX_ITER = 3000
 cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128
 cfg.MODEL.ROI_HEADS.NUM_CLASSES = 13
+cfg.TEST.EVAL_PERIOD = 100
 
 os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
 trainer = DefaultTrainer(cfg)
