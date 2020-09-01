@@ -7,6 +7,21 @@ import numpy as np
 from tqdm import tqdm
 
 import settings
+import argparse
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-s',
+                    '--seed',
+                    help='seed for random split',
+                    type=int,
+                    default=7)
+parser.add_argument('-p',
+                    '--path',
+                    help='path to the record to be split',
+                    type=str,
+                    default=os.path.join(settings.DATA_DIR, 'raw', 'train'))
+args = parser.parse_args()
 
 
 def make_image_dict(annotations_dir: str) -> dict:
@@ -53,5 +68,5 @@ def split_dataset(data_dir: str, factor: float, seed: int, pairs_dict: dict):
             shutil.move(anno, os.path.join(annotations_dir, os.path.split(anno)[-1]))
 
 
-p_dict = make_image_dict(os.path.join(settings.DATA_DIR, 'raw', 'train', 'annos'))
-split_dataset(os.path.join(settings.DATA_DIR, 'raw', 'train'), 0.3, 7, p_dict)
+p_dict = make_image_dict(os.path.join(args.path, 'annos'))
+split_dataset(args.path, 0.3, args.seed, p_dict)
