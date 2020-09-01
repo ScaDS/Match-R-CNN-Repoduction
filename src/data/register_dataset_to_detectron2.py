@@ -26,8 +26,8 @@ register_coco_instances("validation",
                                      'deepfashion2_coco_validation.json'),
                         os.path.join(settings.DATA_DIR,
                                      'raw',
-                                     'image',
-                                     'validation'))
+                                     'validation',
+                                     'image'))
 register_coco_instances("test",
                         {},
                         os.path.join(settings.DATA_DIR,
