@@ -1,9 +1,10 @@
 import cv2
 import os
 
-from detectron2.data import MetadataCatalog, DatasetCatalog
+from detectron2.data import MetadataCatalog, DatasetCatalog, build_detection_test_loader
 from detectron2.engine import DefaultTrainer
 from detectron2.config import get_cfg
+from detectron2.evaluation import COCOEvaluator, inference_on_dataset
 from detectron2.model_zoo import model_zoo
 from detectron2.data.datasets import register_coco_instances
 
@@ -56,5 +57,8 @@ os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
 trainer = DefaultTrainer(cfg)
 trainer.resume_or_load(resume=False)
 trainer.train()
-trainer.test(evaluators=True)
+evaluator = COCOEvaluator('validation', cfg, False, output_dir="./output/")
+val_loader = build_detection_test_loader(cfg, 'validation')
+print(inference_on_dataset(trainer.model, val_loader, evaluator))
+
 
