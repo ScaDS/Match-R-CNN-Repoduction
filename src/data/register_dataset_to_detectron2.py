@@ -1,13 +1,16 @@
 import os
 
+import cv2
 import torch
+
 from detectron2.data import MetadataCatalog, DatasetCatalog, build_detection_test_loader, build_detection_train_loader
-from detectron2.engine import DefaultTrainer, HookBase
+from detectron2.engine import DefaultTrainer, HookBase, DefaultPredictor
 from detectron2.config import get_cfg
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset
 from detectron2.model_zoo import model_zoo
 from detectron2.data.datasets import register_coco_instances
 from detectron2.utils import comm
+from detectron2.utils.visualizer import ColorMode, Visualizer
 
 import settings
 
@@ -66,7 +69,6 @@ register_coco_instances("test",
 train_metadata = MetadataCatalog.get('train')
 dataset_dicts = DatasetCatalog.get('train')
 
-
 cfg = get_cfg()
 cfg.merge_from_file(model_zoo.get_config_file('COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml'))
 cfg.DATASETS.TRAIN = ('train',)
@@ -89,9 +91,22 @@ trainer.register_hooks([val_loss])
 # swap the order of PeriodicWriter and ValidationLoss
 trainer._hooks = trainer._hooks[:-2] + trainer._hooks[-2:][::-1]
 
-
 trainer.resume_or_load(resume=False)
 trainer.train()
 evaluator = COCOEvaluator('validation', cfg, False, output_dir="./output/")
 val_loader = build_detection_test_loader(cfg, 'validation')
 print(inference_on_dataset(trainer.model, val_loader, evaluator))
+
+cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, 'model_final.pth')
+cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7
+predictor = DefaultPredictor(cfg)
+
+
+for d in torch.random.sample(dataset_dicts, 3):
+    im = cv2.imread(d["file_name"])
+    outputs = predictor(im)
+    v = Visualizer(im[:, :, ::-1],
+                   metadata=train_metadata,
+                   scale=0.5,
+                   instance_mode=ColorMode.IMAGE_BW)
+    out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
