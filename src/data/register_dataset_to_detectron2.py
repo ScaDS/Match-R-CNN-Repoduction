@@ -78,7 +78,7 @@ cfg.DATALOADER.NUM_WORKERS = 2
 cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url('COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml')
 cfg.SOLVER.IMS_PER_BATCH = 2
 cfg.SOLVER.BASE_LR = 0.02
-cfg.SOLVER.MAX_ITER = 3000
+cfg.SOLVER.MAX_ITER = 30000
 cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128
 cfg.MODEL.ROI_HEADS.NUM_CLASSES = 13
 # cfg.TEST.EVAL_PERIOD = 100
@@ -96,17 +96,17 @@ trainer.train()
 evaluator = COCOEvaluator('validation', cfg, False, output_dir="./output/")
 val_loader = build_detection_test_loader(cfg, 'validation')
 print(inference_on_dataset(trainer.model, val_loader, evaluator))
-
-cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, 'model_final.pth')
-cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7
-predictor = DefaultPredictor(cfg)
-
-
-for d in torch.random.sample(dataset_dicts, 3):
-    im = cv2.imread(d["file_name"])
-    outputs = predictor(im)
-    v = Visualizer(im[:, :, ::-1],
-                   metadata=train_metadata,
-                   scale=0.5,
-                   instance_mode=ColorMode.IMAGE_BW)
-    out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
+#
+# cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, 'model_final.pth')
+# cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7
+# predictor = DefaultPredictor(cfg)
+#
+#
+# for d in torch.random.sample(dataset_dicts, 3):
+#     im = cv2.imread(d["file_name"])
+#     outputs = predictor(im)
+#     v = Visualizer(im[:, :, ::-1],
+#                    metadata=train_metadata,
+#                    scale=0.5,
+#                    instance_mode=ColorMode.IMAGE_BW)
+#     out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
