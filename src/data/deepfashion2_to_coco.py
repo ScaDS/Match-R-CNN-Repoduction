@@ -1,6 +1,25 @@
 import json
+import os
+import settings
+
 from PIL import Image
 import numpy as np
+from tqdm import tqdm
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-s',
+                    '--set',
+                    help='choose between train and validation',
+                    choices=['train', 'validation'],
+                    nargs='?',
+                    default='train')
+parser.add_argument('-d',
+                    '--dest',
+                    help='output dir',
+                    type=str,
+                    default=os.path.join(settings.DATA_DIR, 'processed'))
+args = parser.parse_args()
 
 dataset = {
     "info": {},
@@ -23,11 +42,12 @@ for idx, e in enumerate(lst_name):
         'skeleton': []
     })
 
-num_images = 191961
+
+num_images = len(os.listdir(os.path.join(settings.DATA_DIR, 'raw', args.set, 'image')))
 sub_index = 0  # the index of ground truth instance
-for num in range(1, num_images + 1):
-    json_name = './train/annos/' + str(num).zfill(6) + '.json'
-    image_name = './train/image/' + str(num).zfill(6) + '.jpg'
+for num in tqdm(range(1, num_images + 1)):
+    json_name = os.path.join(settings.DATA_DIR, 'raw', args.set, 'annos', str(num).zfill(6) + '.json')
+    image_name = os.path.join(settings.DATA_DIR, 'raw', args.set, 'image', str(num).zfill(6) + '.jpg')
 
     if num >= 0:
         imag = Image.open(image_name)
@@ -93,6 +113,7 @@ for num in range(1, num_images + 1):
                         'segmentation': seg,
                     })
 
-json_name = '../deepfashion2.json'
+json_name = os.path.join(args.dest, 'deepfashion2_coco_' + args.set + '.json')
 with open(json_name, 'w') as f:
     json.dump(dataset, f)
+
