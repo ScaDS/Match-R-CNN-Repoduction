@@ -72,7 +72,7 @@ dataset_dicts = DatasetCatalog.get('train')
 cfg = get_cfg()
 cfg.merge_from_file(model_zoo.get_config_file('COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml'))
 cfg.DATASETS.TRAIN = ('train',)
-cfg.DATASETS.TEST = ('validation',)
+cfg.DATASETS.TEST = ('test',)
 cfg.DATASETS.VAL = ('validation',)
 cfg.DATALOADER.NUM_WORKERS = 4
 cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url('COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml')
@@ -98,9 +98,15 @@ trainer._hooks = trainer._hooks[:-2] + trainer._hooks[-2:][::-1]
 
 trainer.resume_or_load(resume=False)
 trainer.train()
-evaluator = COCOEvaluator('validation', cfg, False, output_dir="./output/")
-val_loader = build_detection_test_loader(cfg, 'validation')
-print(inference_on_dataset(trainer.model, val_loader, evaluator))
+evaluator = COCOEvaluator('validation',
+                          cfg,
+                          False,
+                          output_dir="./output/")
+val_loader = build_detection_test_loader(cfg,
+                                         'validation')
+print(inference_on_dataset(trainer.model,
+                           val_loader,
+                           evaluator))
 #
 # cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, 'model_final.pth')
 # cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7
