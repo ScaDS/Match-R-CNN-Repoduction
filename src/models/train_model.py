@@ -25,14 +25,20 @@ optimizer = optim.SGD(model.parameters(), lr=learning_rate)
 loss_fn = CrossEntropyLoss()
 
 
+# TODO:
+#   - write train_loader
+#   - write val_loader
+#   - write main
+
+
 # partly copied from the book Deep Learning with Pytorch
 def training_loop(n_epochs: int, optimizer, model: torch.tensor, loss_fn, train_loader):
     for epoch in range(1, n_epochs + 1):
         loss_train = 0.0
-        for rois, labels in train_loader:
-            rois = rois.to(device=device)
+        for features, labels in train_loader:
+            features = features.to(device=device)
             labels = labels.to(device=device)
-            outputs = model(rois)
+            outputs = model(features)
             loss = loss_fn(outputs, labels)
 
             optimizer.zero_grade()
@@ -54,10 +60,10 @@ def validate(model: torch.tensor, train_loader, val_loader):
         total = 0
 
         with torch.no_grad():
-            for rois, labels in loader:
-                rois = rois.to(device=device)
+            for features, labels in loader:
+                features = features.to(device=device)
                 labels = labels.to(device=device)
-                outputs = model(rois)
+                outputs = model(features)
                 _, predicted = torch.max(outputs, dim=1)
                 total += labels.shape[0]
                 correct += int((predicted == labels).sum())

@@ -10,23 +10,27 @@ import settings
 import argparse
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-s',
-                    '--seed',
-                    help='seed for random split',
-                    type=int,
-                    default=7)
-parser.add_argument('-p',
-                    '--path',
-                    help='path to the record to be split',
-                    type=str,
-                    default=os.path.join(settings.DATA_DIR, 'raw', 'train'))
-parser.add_argument('-f',
-                    '--factor',
-                    help='factor for random split',
-                    type=float,
-                    default=0.3)
-args = parser.parse_args()
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s',
+                        '--seed',
+                        help='seed for random split',
+                        type=int,
+                        default=7)
+    parser.add_argument('-p',
+                        '--path',
+                        help='path to the record to be split',
+                        type=str,
+                        default=os.path.join(settings.DATA_DIR, 'raw', 'train'))
+    parser.add_argument('-f',
+                        '--factor',
+                        help='factor for random split',
+                        type=float,
+                        default=0.1)
+    args = parser.parse_args()
+
+    p_dict = make_image_dict(os.path.join(args.path, 'annos'))
+    split_dataset(args.path, args.factor, args.seed, p_dict)
 
 
 def make_image_dict(annotations_dir: str) -> dict:
@@ -62,5 +66,5 @@ def split_dataset(data_dir: str, factor: float, seed: int, pairs_dict: dict):
         shutil.move(annotation, os.path.join(annotations_dir, os.path.split(annotation)[-1]))
 
 
-p_dict = make_image_dict(os.path.join(args.path, 'annos'))
-split_dataset(args.path, args.factor, args.seed, p_dict)
+if __name__ == '__main__':
+    main()

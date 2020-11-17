@@ -15,14 +15,12 @@ def main():
                         '--coco_file',
                         help='path to coco_file',
                         type=str,
-                        required=True,
-                        defaul=os.path.join(settings.DATA_DIR, 'processed', 'deepfashion2_coco_train.json'))
+                        default=os.path.join(settings.DATA_DIR, 'processed', 'deepfashion2_coco_test.json'))
     parser.add_argument('-i',
                         '--img_dir',
                         help='path to image dir',
                         type=str,
-                        required=True,
-                        defaul=os.path.join(settings.DATA_DIR, 'raw', 'train', 'image'))
+                        default=os.path.join(settings.DATA_DIR, 'raw', 'test', 'image'))
 
     args = parser.parse_args()
     coco_file = args.coco_file
@@ -53,13 +51,15 @@ def get_item(img_dir, items):
     item = items[1]
     print('image-id: ' + items[3])
     print('style ' + str(items[5]))
+    print('item_id: ' + str(items[0]))
+    print(items[1])
     x_1 = item[0]
     y_1 = item[1]
     w = item[2]
     h = item[3]
     right = x_1 + w
     lower = y_1 + h
-    img = Image.open(os.path.join(img_dir, format(item[2], '06') + '.jpg'))
+    img = Image.open(os.path.join(img_dir, items[3] + '.jpg'))
     img = img.crop((x_1, y_1, right, lower))
     return img
 
