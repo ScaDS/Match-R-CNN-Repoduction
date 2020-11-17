@@ -41,7 +41,8 @@ def make_image_dict(annotations_dir: str) -> dict:
 
 def split_dataset(data_dir: str, factor: float, seed: int, pairs_dict: dict):
     test_dir = os.path.join(os.path.dirname(data_dir), 'test')
-    image_dir, annotations_dir = os.path.join(test_dir, 'image'), os.path.join(test_dir, 'annos')
+    image_dir = os.path.join(test_dir, 'image')
+    annotations_dir = os.path.join(test_dir, 'annos')
     os.makedirs(test_dir, exist_ok=True)
     os.makedirs(image_dir, exist_ok=True), os.makedirs(annotations_dir, exist_ok=True)
 

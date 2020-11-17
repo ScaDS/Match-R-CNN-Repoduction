@@ -1,21 +1,6 @@
-from detectron2.modeling import build_backbone
-from detectron2.modeling.poolers import ROIPooler
-
 import torch
-from torch.nn import Conv2d, Module, Linear, BatchNorm1d, Softmax, Dropout2d
+from torch.nn import Module, Linear, BatchNorm1d, Softmax, Dropout, Conv1d
 import torch.nn.functional as F
-
-from src.models.mask_r_cnn import cfg
-
-backbone = build_backbone(cfg)
-
-pooler = ROIPooler(output_size=(14, 14),
-                   scales=[1.0],
-                   sampling_ratio=1,
-                   pooler_type='ROIPool',
-                   canonical_box_size=224,
-                   canonical_level=4)
-# rois = pooler(backbone(NCHW_images), [kx4 tensors])
 
 
 # TODO:
@@ -40,18 +25,18 @@ pooler = ROIPooler(output_size=(14, 14),
 class FeatureExtractor(Module):
     def __init__(self):
         super(FeatureExtractor, self).__init__()
-        self.conv1 = Conv2d(256, 256, kernel_size=3, padding=1)
-        self.conv1_dropout = Dropout2d(p=0.4)
-        self.conv2 = Conv2d(256, 256, kernel_size=3, padding=1)
-        self.conv2_dropout = Dropout2d(p=0.4)
-        self.conv3 = Conv2d(256, 256, kernel_size=3, padding=1)
-        self.conv3_dropout = Dropout2d(p=0.4)
-        self.conv4 = Conv2d(256, 1024, kernel_size=3, padding=1)
-        self.conv4_dropout = Dropout2d(p=0.4)
-        self.fc = Linear(1024, 256)
-        self.batch_norm = BatchNorm1d(256)
+        self.conv1 = Conv1d(in_channels=1024, out_channels=256, kernel_size=3, padding=1)
+        self.conv1_dropout = Dropout(p=0.4)
+        self.conv1 = Conv1d(in_channels=256, out_channels=256, kernel_size=3, padding=1)
+        self.conv2_dropout = Dropout(p=0.4)
+        self.conv1 = Conv1d(in_channels=256, out_channels=256, kernel_size=3, padding=1)
+        self.conv3_dropout = Dropout(p=0.4)
+        self.conv4 = Conv1d(in_channels=256, out_channels=1024, kernel_size=3, padding=1)
+        self.conv4_dropout = Dropout(p=0.4)
+        self.fc = Linear(in_features=1024, out_features=256)
+        self.batch_norm = BatchNorm1d(num_features=256)
 
-    def forward(self, x):
+    def forward(self, x: torch.tensor) -> torch.tensor:
         out = torch.relu(self.conv1(x))
         out = self.conv1_dropout(out)
         out = torch.relu(self.conv2(out))
@@ -60,7 +45,7 @@ class FeatureExtractor(Module):
         out = self.conv3_dropout(out)
         out = torch.relu(self.conv4(out))
         out = self.conv4_dropout(out)
-        out = torch.relu(F.adaptive_avg_pool2d(out, 1024))
+        out = torch.relu(F.adaptive_avg_pool2d(out, output_size=1024))
         out = out.view(-1, 1024)
         out = self.fc(out)
         out = self.batch_norm(out)
@@ -70,10 +55,10 @@ class FeatureExtractor(Module):
 class SimilarityNet(Module):
     def __init__(self):
         super(SimilarityNet, self).__init__()
-        self.fc = Linear(256, 2)
+        self.fc = Linear(in_features=256, out_features=2)
         self.act = Softmax()
 
-    def forward(self, x1, x2):
+    def forward(self, x1: torch.tensor, x2: torch.tensor) -> torch.tensor:
         out = x1 - x2
         out = out**2
         out = self.fc(out)
@@ -87,7 +72,7 @@ class MatchingNet(Module):
         self.fe = FeatureExtractor()
         self.sn = SimilarityNet()
 
-    def forward(self, x1, x2):
+    def forward(self, x1: torch.tensor, x2: torch.tensor) -> torch.tensor:
         out1 = self.fe(x1)
         out2 = self.fe(x2)
         out = self.sn(out1, out2)
