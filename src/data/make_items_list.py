@@ -34,17 +34,17 @@ def main():
 
 def make_items_list(file: str) -> list:
     with open(file) as json_file:
-        dataset = json.load(json_file)
+        coco_file = json.load(json_file)
         items = []
-        for i in dataset.get('annotations'):
-            bbox = i.get('bbox')
-            item_id = i.get('id')
-            pair_id = i.get('pair_id')
-            image_id = i.get('image_id')
-            category_id = i.get('category_id')
-            style = i.get('style')
-            items.append((item_id, bbox, pair_id, image_id, category_id, style))
-        return items
+    for i in coco_file.get('annotations'):
+        bbox = i.get('bbox')
+        item_id = i.get('id')
+        pair_id = i.get('pair_id')
+        image_id = i.get('image_id')
+        category_id = i.get('category_id')
+        style = i.get('style')
+        items.append((item_id, bbox, pair_id, image_id, category_id, style))
+    return items
 
 
 def get_item(img_dir, items):

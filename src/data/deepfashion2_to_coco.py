@@ -13,7 +13,7 @@ parser.add_argument('-s',
                     help='choose between train, validation and test',
                     choices=['train', 'validation', 'test'],
                     nargs='?',
-                    default='test')
+                    default='validation')
 parser.add_argument('-d',
                     '--dest',
                     help='output dir',

@@ -7,3 +7,4 @@ detectron2~=0.2
 setuptools>=49.2.1
 pycocotools>=2.0.1
 torchvision>=0.5.0
+pandas>=1.2.0
