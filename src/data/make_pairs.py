@@ -9,29 +9,29 @@ import settings
 
 
 def main():
-
     parser = argparse.ArgumentParser()
     parser.add_argument('-p',
                         '--pairs',
                         help='number of pairs',
                         type=int,
-                        default=1)
-    parser.add_argument('-p',
-                        '--path',
-                        help='path to coco_file',
-                        type=str,
-                        default=os.path.join(settings.DATA_DIR, 'processed', 'deepfashion2_coco_train.json'))
+                        default=6)
+    # parser.add_argument('-p',
+    #                     '--path',
+    #                     help='path to coco_file',
+    #                     type=str,
+    #                     default=os.path.join(settings.DATA_DIR, 'processed', 'deepfashion2_coco_train.json'))
     args = parser.parse_args()
 
-    coco_file = args.path
+    # coco_file = args.path
+    coco_file = os.path.join(settings.DATA_DIR, 'processed', 'deepfashion2_coco_train.json')
     n_pairs = args.pairs
     df = make_image_df(coco_file)
+    print(create_pairs(df, n_pairs))
 
     return create_pairs(df, n_pairs)
 
 
 def make_image_df(file):
-
     with open(file, mode='r') as json_file:
         coco_file = json.load(json_file)
 
@@ -47,7 +47,6 @@ def make_image_df(file):
 
 
 def create_pairs(df, number_of_pairs):
-
     pairs = []
     i = 0
     while i < number_of_pairs:
@@ -64,10 +63,11 @@ def create_pairs(df, number_of_pairs):
         negative_example2 = category_fitting_df[
             category_fitting_df['image_id'] != positive_example1['image_id'].item()].sample(n=1)
 
-        # appends four tuple with (pos1, pos2, neg1, neg2)
+        # appends tuple with (pos1, pos2)
         pairs.append((positive_example1['image_id'].values[0],
-                      positive_example2['image_id'].values[0],
-                      negative_example1['image_id'].values[0],
+                      positive_example2['image_id'].values[0],))
+        # appends tuple with (neg1, neg2)
+        pairs.append((negative_example1['image_id'].values[0],
                       negative_example2['image_id'].values[0]))
         i += 1
 
