@@ -1,14 +1,15 @@
-import json
 import os
+
 import torch
 import torch.utils.data
 import torchvision
 from PIL import Image
 from pycocotools.coco import COCO
-from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 
-# partly copied from: https://github.com/tkshnkmr/frcnn_medium_sample/blob/master/utils.py
+
 from src.data import make_pairs
+from src.features.get_features import get_features
+from src.models.matching_network import MatchingNet
 
 
 class MakeDataset(torch.utils.data.Dataset):
@@ -17,7 +18,7 @@ class MakeDataset(torch.utils.data.Dataset):
         self.transforms = transforms
         self.coco = COCO(annotation)
         # self.ids = list(sorted(self.coco.imgs.keys()))
-        self.ids = make_pairs.make_pairs()
+        self.ids = make_pairs.pairs(10)
 
     def __getitem__(self, index):
         # Own coco file
@@ -179,20 +180,20 @@ def collate_fn(batch):
     return tuple(zip(*batch))
 
 
-def get_model_instance_segmentation(num_classes):
-    # load an instance segmentation model pre-trained pre-trained on COCO
-    model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=False)
-    # get number of input features for the classifier
-    in_features = model.roi_heads.box_predictor.cls_score.in_features
-    # replace the pre-trained head with a new one
-    model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
-
-    return model
+# def get_model_instance_segmentation(num_classes):
+#     # load an instance segmentation model pre-trained pre-trained on COCO
+#     model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=False)
+#     # get number of input features for the classifier
+#     in_features = model.roi_heads.box_predictor.cls_score.in_features
+#     # replace the pre-trained head with a new one
+#     model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
+#
+#     return model
 
 
 # path to your own data and coco file
-train_data_dir = "../data/raw/test/image/"
-train_coco = "../data/processed/deepfashion2_coco_test.json"
+train_data_dir = os.path.join('data', 'raw', 'train', 'image')
+train_coco = os.path.join('data', 'processed', 'deepfashion2_coco_train.json')
 
 # Batch size
 train_batch_size = 1
@@ -203,7 +204,6 @@ num_workers_dl = 4
 
 # Params for training
 
-# Two classes; Only target class or background
 num_classes = 13
 num_epochs = 10
 
@@ -231,12 +231,16 @@ data_loader = torch.utils.data.DataLoader(
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 # DataLoader is iterable over Dataset
-for imgs, annotations in data_loader:
-    imgs = list(img.to(device) for img in imgs)
-    annotations = [{k: v.to(device) for k, v in t.items()} for t in annotations]
-    print(annotations)
+for imgs1, imgs2, annotations1, annotations2 in data_loader:
+    imgs1 = list(img1.to(device) for img1 in imgs1)
+    imgs2 = list(img1.to(device) for img1 in imgs1)
+    annotations1 = [{k: v.to(device) for k, v in t.items()} for t in annotations1]
+    print(annotations1)
+    annotations2 = [{k: v.to(device) for k, v in t.items()} for t in annotations2]
+    print(annotations2)
 
-model = get_model_instance_segmentation(num_classes)
+# model = get_model_instance_segmentation(num_classes)
+model = MatchingNet().to(device=device)
 
 # move model to the right device
 model.to(device)
@@ -253,11 +257,13 @@ for epoch in range(num_epochs):
     print(f"Epoch: {epoch}/{num_epochs}")
     model.train()
     i = 0
-    for imgs, annotations in data_loader:
+    for imgs1, imgs2, annotations1, annotations2 in data_loader:
         i += 1
-        imgs = list(img.to(device) for img in imgs)
-        annotations = [{k: v.to(device) for k, v in t.items()} for t in annotations]
-        loss_dict = model(imgs, annotations)
+        imgs1 = list(img1.to(device) for img1 in imgs1)
+        imgs2 = list(img2.to(device) for img2 in imgs2)
+        annotations1 = [{k: v.to(device) for k, v in t.items()} for t in annotations1]
+        annotations2 = [{k: v.to(device) for k, v in t.items()} for t in annotations2]
+        loss_dict = model(get_features(imgs1), get_features(imgs2), annotations1, annotations2)
         losses = sum(loss for loss in loss_dict.values())
 
         optimizer.zero_grad()

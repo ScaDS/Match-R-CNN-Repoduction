@@ -5,8 +5,6 @@ from collections import defaultdict
 
 import pandas as pd
 
-import settings
-
 
 def main():
     parser = argparse.ArgumentParser()
@@ -23,12 +21,18 @@ def main():
     args = parser.parse_args()
 
     # coco_file = args.path
-    coco_file = os.path.join(settings.DATA_DIR, 'processed', 'deepfashion2_coco_train.json')
+    coco_file = os.path.join('data', 'processed', 'deepfashion2_coco_train.json')
     n_pairs = args.pairs
     df = make_image_df(coco_file)
     print(create_pairs(df, n_pairs))
 
     return create_pairs(df, n_pairs)
+
+
+def pairs(n):
+    coco_file = os.path.join('data', 'processed', 'deepfashion2_coco_train.json')
+    df = make_image_df(coco_file)
+    return create_pairs(df, n)
 
 
 def make_image_df(file):

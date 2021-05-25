@@ -36,7 +36,7 @@ class FeatureExtractor(Module):
         self.fc = Linear(in_features=1024, out_features=256)
         self.batch_norm = BatchNorm1d(num_features=256)
 
-    def forward(self, x: torch.tensor) -> torch.tensor:
+    def forward(self, x):
         out = torch.relu(self.conv1(x))
         out = self.conv1_dropout(out)
         out = torch.relu(self.conv2(out))
@@ -58,7 +58,7 @@ class SimilarityNet(Module):
         self.fc = Linear(in_features=256, out_features=2)
         self.act = Softmax()
 
-    def forward(self, x1: torch.tensor, x2: torch.tensor) -> torch.tensor:
+    def forward(self, x1, x2):
         out = x1 - x2
         out = out**2
         out = self.fc(out)
@@ -72,7 +72,7 @@ class MatchingNet(Module):
         self.fe = FeatureExtractor()
         self.sn = SimilarityNet()
 
-    def forward(self, x1: torch.tensor, x2: torch.tensor) -> torch.tensor:
+    def forward(self, x1, x2):
         out1 = self.fe(x1)
         out2 = self.fe(x2)
         out = self.sn(out1, out2)

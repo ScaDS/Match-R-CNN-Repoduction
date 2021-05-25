@@ -6,7 +6,7 @@ import settings
 import os
 import json
 
-from src.features import get_box_features
+from src.features import get_features
 
 
 def main():
@@ -29,7 +29,7 @@ def main():
     items_list = make_items_list(coco_file)
     for item in items_list:
         img = get_item(img_dir, item)
-        get_box_features.get_box_features(img)
+        get_features.get_box_features(img)
 
 
 def make_items_list(file: str) -> list:
