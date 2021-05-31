@@ -71,9 +71,9 @@ class MakeDataset(torch.utils.data.Dataset):
             a[coco_annotation1[i]["category_id"] - 1] = 1
         cat_id1 = a
         for i in range(num_objs2):
-            a = torch.zeros(13, dtype=torch.int64)
-            a[coco_annotation2[i]["category_id"] - 1] = 1
-        cat_id2 = a
+            b = torch.zeros(13, dtype=torch.int64)
+            b[coco_annotation2[i]["category_id"] - 1] = 1
+        cat_id2 = b
 
         # ID
         ident1 = []
@@ -110,7 +110,7 @@ class MakeDataset(torch.utils.data.Dataset):
         style1 = torch.as_tensor(style1, dtype=torch.float32)
         style2 = []
         for i in range(num_objs2):
-            style1.append(coco_annotation2[i]["style"])
+            style2.append(coco_annotation2[i]["style"])
         style2 = torch.as_tensor(style2, dtype=torch.float32)
 
         # Number of Keypoints

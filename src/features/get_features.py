@@ -53,10 +53,10 @@ from detectron2.structures import ImageList
 def get_features(images_list):
     cfg = get_cfg()
     cfg.merge_from_file(model_zoo.get_config_file('COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml'))
-    cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
+    cfg.MODEL.WEIGHTS = os.path.join('output', 'model_final.pth')
     cfg.SOLVER.IMS_PER_BATCH = 1
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 13
-    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7
+    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.0
 
     model = build_model(cfg)
     DetectionCheckpointer(model).load(cfg.MODEL.WEIGHTS)
@@ -72,6 +72,6 @@ def get_features(images_list):
         box_features = model.roi_heads.box_head(box_features)
         predictions = model.roi_heads.box_predictor(box_features)
         pred_instances, pred_inds = model.roi_heads.box_predictor.inference(predictions, proposals)
-
         feats = box_features[pred_inds]
-    return feats
+
+    return feats.unsqueeze(2)

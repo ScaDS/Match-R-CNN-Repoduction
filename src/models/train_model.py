@@ -29,7 +29,7 @@ from src.models.matching_network import MatchingNet
 # learning_rate = 0.02
 # n_epochs = 5000
 # optimizer = optim.SGD(model.parameters(), lr=learning_rate)
-# loss_fn = CrossEntropyLoss()
+# c
 #
 # train_data_dir = "../data/raw/test/image/"
 # train_coco = "../data/processed/deepfashion2_coco_test.json"
@@ -51,13 +51,6 @@ from src.models.matching_network import MatchingNet
 #     num_workers=num_workers_dl,
 #     collate_fn=make_dataset.collate_fn,
 # )
-#
-#
-# # TODO:
-# #   - write train_loader
-# #   - write val_loader
-# #   - write main
-#
 #
 # # partly copied from the book Deep Learning with Pytorch
 # def training_loop(num_epochs, opt, mod, loss_function, train_loader):
@@ -144,10 +137,10 @@ num_workers_dl = 4
 
 # Params for training
 
-num_classes = 13
+# num_classes = 13
 num_epochs = 10
 
-lr = 0.005
+lr = 0.02
 momentum = 0.9
 weight_decay = 0.005
 
@@ -171,13 +164,13 @@ data_loader = torch.utils.data.DataLoader(
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 # DataLoader is iterable over Dataset
-for imgs1, imgs2, annotations1, annotations2 in data_loader:
-    imgs1 = list(img1.to(device) for img1 in imgs1)
-    imgs2 = list(img1.to(device) for img1 in imgs1)
-    annotations1 = [{k: v.to(device) for k, v in t.items()} for t in annotations1]
-    print(annotations1)
-    annotations2 = [{k: v.to(device) for k, v in t.items()} for t in annotations2]
-    print(annotations2)
+# for img1, img2, annotation1, annotation2 in data_loader:
+#     imgs1 = list(img1.to(device) for img1 in imgs1)
+#     imgs2 = list(img1.to(device) for img1 in imgs1)
+#     annotations1 = [{k: v.to(device) for k, v in t.items()} for t in annotations1]
+#     print(annotations1)
+#     annotations2 = [{k: v.to(device) for k, v in t.items()} for t in annotations2]
+#     print(annotations2)
 
 # model = get_model_instance_segmentation(num_classes)
 model = MatchingNet().to(device=device)
@@ -189,25 +182,65 @@ params = [p for p in model.parameters() if p.requires_grad]
 optimizer = torch.optim.SGD(
     params, lr=lr, momentum=momentum, weight_decay=weight_decay
 )
+cross_entropy_loss = CrossEntropyLoss()
 
 len_dataloader = len(data_loader)
 
-# Training
-for epoch in range(num_epochs):
-    print(f"Epoch: {epoch}/{num_epochs}")
-    model.train()
-    i = 0
-    for imgs1, imgs2, annotations1, annotations2 in data_loader:
-        i += 1
-        imgs1 = list(img1.to(device) for img1 in imgs1)
-        imgs2 = list(img2.to(device) for img2 in imgs2)
-        annotations1 = [{k: v.to(device) for k, v in t.items()} for t in annotations1]
-        annotations2 = [{k: v.to(device) for k, v in t.items()} for t in annotations2]
-        loss_dict = model(get_features(imgs1), get_features(imgs2), annotations1, annotations2)
-        losses = sum(loss for loss in loss_dict.values())
 
-        optimizer.zero_grad()
-        losses.backward()
-        optimizer.step()
+# # Training
+# for epoch in range(num_epochs):
+#     print(f"Epoch: {epoch}/{num_epochs}")
+#     model.train()
+#     i = 0
+#     for imgs1, imgs2, annotations1, annotations2 in data_loader:
+#         i += 1
+#         imgs1 = list(img1.to(device) for img1 in imgs1)
+#         imgs2 = list(img2.to(device) for img2 in imgs2)
+#         annotations1 = [{k: v.to(device) for k, v in t.items()} for t in annotations1]
+#         annotations2 = [{k: v.to(device) for k, v in t.items()} for t in annotations2]
+#         outputs = model(get_features(imgs1), get_features(imgs2))
+#         loss_dict = model(get_features(imgs1), get_features(imgs2), annotations1, annotations2)
+#         losses = sum(loss for loss in loss_dict.values())
+#
+#         optimizer.zero_grad()
+#         losses.backward()
+#         optimizer.step()
+#
+#         print(f"Iteration: {i}/{len_dataloader}, Loss: {losses}")
 
-        print(f"Iteration: {i}/{len_dataloader}, Loss: {losses}")
+
+def training_loop(num_epochs, opt, mod, loss_function, train_loader):
+    for epoch in range(1, num_epochs + 1):
+        loss_train = 0.0
+        for imgs1, imgs2, annotations1, annotations2 in train_loader:
+            # imgs1 = list(img1.to(device) for img1 in imgs1)
+            # imgs2 = list(img2.to(device) for img2 in imgs2)
+            print('imgs1 - 1')
+            print(imgs1)
+            print('-------------------------------')
+            imgs1 = get_features(imgs1)
+            print('imgs1 - 2')
+            print(imgs1)
+            print('-------------------------------')
+            imgs2 = get_features(imgs2)
+            imgs1 = imgs1.to(device)
+            imgs2 = imgs2.to(device)
+            annotations1 = [{k: v.to(device) for k, v in t.items()} for t in annotations1]
+            annotations2 = [{k: v.to(device) for k, v in t.items()} for t in annotations2]
+            # outputs = mod(get_features(imgs1), get_features(imgs2))
+            outputs = mod(imgs1, imgs2)
+            loss = loss_function(outputs, annotations1, annotations2)
+
+            opt.zero_grade()
+            loss.backward()
+            opt.step()
+
+            loss_train += loss.item()
+
+        if epoch == 1 or epoch % 10 == 0:
+            print('{} Epoch {}, Training loss {}'.format(
+                datetime.now(), epoch,
+                loss_train / len(train_loader)))
+
+
+training_loop(num_epochs, optimizer, model, cross_entropy_loss, data_loader)

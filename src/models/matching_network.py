@@ -1,5 +1,5 @@
 import torch
-from torch.nn import Module, Linear, BatchNorm1d, Softmax, Dropout, Conv1d
+from torch.nn import Module, Linear, BatchNorm1d, Softmax, Dropout, Conv1d, Conv2d
 import torch.nn.functional as F
 
 
@@ -27,9 +27,9 @@ class FeatureExtractor(Module):
         super(FeatureExtractor, self).__init__()
         self.conv1 = Conv1d(in_channels=1024, out_channels=256, kernel_size=3, padding=1)
         self.conv1_dropout = Dropout(p=0.4)
-        self.conv1 = Conv1d(in_channels=256, out_channels=256, kernel_size=3, padding=1)
+        self.conv2 = Conv1d(in_channels=256, out_channels=256, kernel_size=3, padding=1)
         self.conv2_dropout = Dropout(p=0.4)
-        self.conv1 = Conv1d(in_channels=256, out_channels=256, kernel_size=3, padding=1)
+        self.conv3 = Conv1d(in_channels=256, out_channels=256, kernel_size=3, padding=1)
         self.conv3_dropout = Dropout(p=0.4)
         self.conv4 = Conv1d(in_channels=256, out_channels=1024, kernel_size=3, padding=1)
         self.conv4_dropout = Dropout(p=0.4)
