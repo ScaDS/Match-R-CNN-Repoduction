@@ -8,7 +8,6 @@ from torch import optim
 from torch.nn import CrossEntropyLoss
 from torch.utils.data import Dataset
 
-from src.data import make_dataset
 from src.data.make_dataset import MakeDataset
 from src.features.get_features import get_features
 from src.models.matching_network import MatchingNet
@@ -102,9 +101,9 @@ from src.models.matching_network import MatchingNet
 #     train_loader=data_loader
 # )
 
-# In my case, just added ToTensor
 def get_transform():
-    custom_transforms = [torchvision.transforms.ToTensor()]
+    custom_transforms = [torchvision.transforms.Resize(800),
+                         torchvision.transforms.ToTensor()]
     return torchvision.transforms.Compose(custom_transforms)
 
 
@@ -182,7 +181,7 @@ params = [p for p in model.parameters() if p.requires_grad]
 optimizer = torch.optim.SGD(
     params, lr=lr, momentum=momentum, weight_decay=weight_decay
 )
-cross_entropy_loss = CrossEntropyLoss()
+
 
 len_dataloader = len(data_loader)
 
@@ -209,27 +208,36 @@ len_dataloader = len(data_loader)
 #         print(f"Iteration: {i}/{len_dataloader}, Loss: {losses}")
 
 
+def make_target(anno1, anno2):
+    pair1 = anno1[0]['pair_id']
+    pair2 = anno2[0]['pair_id']
+    style1 = anno1[0]['style']
+    style2 = anno2[0]['style']
+    target = torch.tensor([1, 0])
+    for p1, s1 in zip(pair1, style1):
+        for p2, s2 in zip(pair2, style2):
+            if p1 == p2 and s1 == s2:
+                if s1 != torch.tensor([0]).to(device):
+                    target = torch.tensor([0, 1])
+    return target
+
+
 def training_loop(num_epochs, opt, mod, loss_function, train_loader):
     for epoch in range(1, num_epochs + 1):
         loss_train = 0.0
         for imgs1, imgs2, annotations1, annotations2 in train_loader:
             # imgs1 = list(img1.to(device) for img1 in imgs1)
             # imgs2 = list(img2.to(device) for img2 in imgs2)
-            print('imgs1 - 1')
             print(imgs1)
-            print('-------------------------------')
-            imgs1 = get_features(imgs1)
-            print('imgs1 - 2')
-            print(imgs1)
-            print('-------------------------------')
-            imgs2 = get_features(imgs2)
-            imgs1 = imgs1.to(device)
-            imgs2 = imgs2.to(device)
+            print(imgs1[0].shape)
+            imgs1 = get_features(imgs1).to(device)
+            imgs2 = get_features(imgs2).to(device)
             annotations1 = [{k: v.to(device) for k, v in t.items()} for t in annotations1]
             annotations2 = [{k: v.to(device) for k, v in t.items()} for t in annotations2]
             # outputs = mod(get_features(imgs1), get_features(imgs2))
             outputs = mod(imgs1, imgs2)
-            loss = loss_function(outputs, annotations1, annotations2)
+            target = make_target(annotations1, annotations2)
+            loss = loss_function(outputs, target)
 
             opt.zero_grade()
             loss.backward()
@@ -243,4 +251,4 @@ def training_loop(num_epochs, opt, mod, loss_function, train_loader):
                 loss_train / len(train_loader)))
 
 
-training_loop(num_epochs, optimizer, model, cross_entropy_loss, data_loader)
+training_loop(num_epochs, optimizer, model, CrossEntropyLoss(), data_loader)
