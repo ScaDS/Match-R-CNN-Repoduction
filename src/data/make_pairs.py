@@ -4,6 +4,7 @@ import os
 from collections import defaultdict
 
 import pandas as pd
+from tqdm import tqdm
 
 
 def main():
@@ -23,16 +24,18 @@ def main():
     # coco_file = args.path
     coco_file = os.path.join('data', 'processed', 'deepfashion2_coco_train.json')
     n_pairs = args.pairs
+
     df = make_image_df(coco_file)
+    print(df)
     print(create_pairs(df, n_pairs))
 
     return create_pairs(df, n_pairs)
 
 
-def pairs(n):
-    coco_file = os.path.join('data', 'processed', 'deepfashion2_coco_train.json')
-    df = make_image_df(coco_file)
-    return create_pairs(df, n)
+# def pairs(n):
+#     coco_file = os.path.join('data', 'processed', 'deepfashion2_coco_train.json')
+#     df = make_image_df(coco_file)
+#     return create_pairs(df, n)
 
 
 def make_image_df(file):
@@ -41,7 +44,8 @@ def make_image_df(file):
 
     image_dict = defaultdict(list)
 
-    for i in coco_file.get('annotations'):
+    print('creating image-dataframe:')
+    for i in tqdm(coco_file.get('annotations')):
         image_dict['image_id'].append(i.get('image_id'))
         image_dict['pair_id'].append(i.get('pair_id'))
         image_dict['style'].append(i.get('style'))
@@ -76,6 +80,26 @@ def create_pairs(df, number_of_pairs):
         i += 1
 
     return pairs
+
+
+# def create_all_positiv_pairs_df(df):
+#     positiv_pairs = []
+#     print('creating all positive pairs:')
+#     for index1, row1 in tqdm(df.iterrows()):
+#         for index2, row2 in df.iterrows():
+#             if row1['image_id'] != row2['image_id']:
+#                 if row1['style'] != 0:
+#                     if row1['pair_id'] == row2['pair_id']:
+#                         positiv_pairs.append((index1, index2))
+#
+#     return positiv_pairs
+
+
+def create_all_negativ_pairs_df(df):
+    negativ_pairs = []
+    for index, row in df.iterrows():
+        print(row)
+    return negativ_pairs
 
 
 if __name__ == '__main__':

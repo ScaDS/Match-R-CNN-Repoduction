@@ -15,7 +15,7 @@ class MakeDataset(torch.utils.data.Dataset):
         self.transforms = transforms
         self.coco = COCO(annotation)
         # self.ids = list(sorted(self.coco.imgs.keys()))
-        self.ids = make_pairs.pairs(10)
+        self.ids = make_pairs.pairs(1000)
 
     def __getitem__(self, index):
         # Own coco file
