@@ -6,7 +6,7 @@ from PIL import Image
 from pycocotools.coco import COCO
 
 
-from src.data import make_pairs
+from src.data import make_pairs, create_all_pairs
 
 
 class MakeDataset(torch.utils.data.Dataset):
@@ -15,7 +15,8 @@ class MakeDataset(torch.utils.data.Dataset):
         self.transforms = transforms
         self.coco = COCO(annotation)
         # self.ids = list(sorted(self.coco.imgs.keys()))
-        self.ids = make_pairs.pairs(1000)
+        # self.ids = make_pairs.pairs(1000)
+        self.ids = create_all_pairs.load_pairs(os.path.join('data', 'processed', 'training_pairs.pkl'))
 
     def __getitem__(self, index):
         # Own coco file

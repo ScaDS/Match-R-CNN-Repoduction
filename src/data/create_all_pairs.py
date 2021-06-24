@@ -3,7 +3,7 @@ import os
 import pickle
 from pathlib import Path
 from typing import Tuple, List
-
+from itertools import chain
 from tqdm import tqdm
 
 
@@ -12,7 +12,7 @@ def shop_user_lists(path: str) -> Tuple[List[str], List[str]]:
     shop_images_list = []
     user_images_list = []
 
-    print('make shop- and user-list')
+    print('make shop- and user-list:')
     for file in tqdm(os.listdir(path)):
         with open(os.path.join(path, file), mode='r') as json_file:
             anno_file = json.load(json_file)
@@ -78,24 +78,49 @@ def create_negative_pairs(shop: List[str],
     return negative_pairs
 
 
+def load_pairs(pairs_pkl: str) -> List[Tuple[str, str]]:
+    with open(pairs_pkl, 'rb') as f:
+        pairs = pickle.load(f)
+    return pairs
+
+
 def main():
 
     file = os.path.join('data', 'processed', 'deepfashion2_coco_train.json')
     with open(file, mode='r') as json_file:
         coco_file = json.load(json_file)
 
-    shop, user = shop_user_lists(os.path.join('data', 'raw', 'train', 'annos'))
+    shop_pkl = Path(os.path.join('data', 'processed', 'shop_list.pkl'))
+    user_pkl = Path(os.path.join('data', 'processed', 'user_list.pkl'))
+    if shop_pkl.is_file() and user_pkl.is_file():
+        with open(shop_pkl, 'rb') as f:
+            shop = pickle.load(f)
+        with open(user_pkl, 'rb') as f:
+            user = pickle.load(f)
+    else:
+        shop, user = shop_user_lists(os.path.join('data', 'raw', 'train', 'annos'))
+        with open(shop_pkl, 'wb') as f:
+            pickle.dump(shop, f)
+        with open(user_pkl, 'wb') as f:
+            pickle.dump(user, f)
 
-    # positve_pairs = create_all_positive_pairs(coco_file, shop, user)
-    # with open('positive_pairs.pkl', 'wb') as f:
-    #     pickle.dump(positve_pairs, f)
+    positive_pkl = Path(os.path.join('data', 'processed', 'positive_pairs.pkl'))
+    if positive_pkl.is_file():
+        with open(positive_pkl, 'rb') as f:
+            positive_pairs = pickle.load(f)
+    else:
+        positive_pairs = create_all_positive_pairs(coco_file, shop, user)
+        with open(positive_pkl, 'wb') as f:
+            pickle.dump(positive_pairs, f)
 
-    with open('positiv_pairs.pkl', 'rb') as f:
-        positive_pairs = pickle.load(f)
     negative_pairs = create_negative_pairs(shop, user, coco_file, positive_pairs)
-
-    with open('negative_pairs', 'wb') as f:
+    with open(os.path.join('data', 'processed', 'negative_pairs'), 'wb') as f:
         pickle.dump(negative_pairs, f)
+
+    training_pairs = list(chain(*zip(positive_pairs, negative_pairs)))
+    print('length training pairs: ', len(training_pairs))
+    with open(os.path.join('data', 'processed', 'training_pairs.pkl'), 'wb') as f:
+        pickle.dump(training_pairs, f)
 
 
 if __name__ == '__main__':

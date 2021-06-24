@@ -82,19 +82,6 @@ def create_pairs(df, number_of_pairs):
     return pairs
 
 
-# def create_all_positiv_pairs_df(df):
-#     positiv_pairs = []
-#     print('creating all positive pairs:')
-#     for index1, row1 in tqdm(df.iterrows()):
-#         for index2, row2 in df.iterrows():
-#             if row1['image_id'] != row2['image_id']:
-#                 if row1['style'] != 0:
-#                     if row1['pair_id'] == row2['pair_id']:
-#                         positiv_pairs.append((index1, index2))
-#
-#     return positiv_pairs
-
-
 def create_all_negativ_pairs_df(df):
     negativ_pairs = []
     for index, row in df.iterrows():

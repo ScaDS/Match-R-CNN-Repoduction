@@ -126,3 +126,5 @@ training_loop(num_epochs,
               model,
               CrossEntropyLoss(),
               data_loader)
+
+torch.save(model.state_dict(), os.path.join('data', 'results', 'trained_model.pth'))
