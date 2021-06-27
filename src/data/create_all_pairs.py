@@ -66,15 +66,16 @@ def create_negative_pairs(shop: List[str],
     shop_set = set(shop)
 
     print('creating negative pairs:')
-    while len(negative_pairs) < len(positive_pairs):
-        for i in tqdm(coco_file.get('annotations')):
-            if i.get('image_id') in user_set:
-                for j in coco_file.get('annotations'):
-                    if j.get('image_id') in shop_set:
-                        if i.get('category_id') == j.get('category_id'):
-                            if i.get('pair_id') != j.get('pair_id'):
-                                negative_pairs.append((i.get('image_id'), j.get('image_id')))
 
+    for i in tqdm(coco_file.get('annotations')):
+        if i.get('image_id') in user_set:
+            for j in coco_file.get('annotations'):
+                if j.get('image_id') in shop_set:
+                    if i.get('category_id') == j.get('category_id'):
+                        if i.get('pair_id') != j.get('pair_id'):
+                            negative_pairs.append((i.get('image_id'), j.get('image_id')))
+        if len(negative_pairs) == len(positive_pairs):
+            break
     return negative_pairs
 
 
@@ -114,13 +115,19 @@ def main():
             pickle.dump(positive_pairs, f)
 
     negative_pairs = create_negative_pairs(shop, user, coco_file, positive_pairs)
-    with open(os.path.join('data', 'processed', 'negative_pairs'), 'wb') as f:
+    with open(os.path.join('data', 'processed', 'negative_pairs.pkl'), 'wb') as f:
         pickle.dump(negative_pairs, f)
 
     training_pairs = list(chain(*zip(positive_pairs, negative_pairs)))
-    print('length training pairs: ', len(training_pairs))
     with open(os.path.join('data', 'processed', 'training_pairs.pkl'), 'wb') as f:
         pickle.dump(training_pairs, f)
+
+    print('length pos pairs: ', len(positive_pairs))
+    print(positive_pairs[:10])
+    print('length neg pairs: ', len(negative_pairs))
+    print(negative_pairs[:10])
+    print('length training pairs: ', len(training_pairs))
+    print(training_pairs[:10])
 
 
 if __name__ == '__main__':
