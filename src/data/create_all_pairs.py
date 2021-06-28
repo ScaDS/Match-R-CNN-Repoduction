@@ -68,14 +68,19 @@ def create_negative_pairs(shop: List[str],
     print('creating negative pairs:')
 
     for i in tqdm(coco_file.get('annotations')):
-        if i.get('image_id') in user_set:
-            for j in coco_file.get('annotations'):
-                if j.get('image_id') in shop_set:
-                    if i.get('category_id') == j.get('category_id'):
-                        if i.get('pair_id') != j.get('pair_id'):
-                            negative_pairs.append((i.get('image_id'), j.get('image_id')))
-        if len(negative_pairs) == len(positive_pairs):
+        if len(negative_pairs) >= len(positive_pairs):
             break
+        else:
+            if i.get('image_id') in user_set:
+                for j in coco_file.get('annotations'):
+                    if len(negative_pairs) >= len(positive_pairs):
+                        break
+                    else:
+                        if j.get('image_id') in shop_set:
+                            if i.get('category_id') == j.get('category_id'):
+                                if i.get('pair_id') != j.get('pair_id'):
+                                    negative_pairs.append((i.get('image_id'), j.get('image_id')))
+
     return negative_pairs
 
 
