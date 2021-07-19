@@ -147,13 +147,15 @@ def training_loop(num_epochs, opt, mod, loss_function, train_loader):
                 loss = loss_function(outputs, target)
                 loss_val += loss.item()
 
-        print(f'Epoch {epoch + 1} \t\t Training Loss: {loss_train / len(train_loader)} \t\t Validation Loss: {loss_val / len(validation_loader)}')
+        print(f'Epoch {epoch + 1} \t\t '
+              f'Training Loss: {loss_train / len(train_loader)} \t\t '
+              f'Validation Loss: {loss_val / len(validation_loader)}')
         if min_loss_val > loss_val:
             print(f'Validation Loss Decreased({min_loss_val:.6f}--->{loss_val:.6f}) \t Saving The Model')
             min_loss_val = loss_val
             torch.save(model.state_dict(), os.path.join('data', 'results', 'final_model.pth'))
 
-        torch.save(model.state_dict(), os.path.join('data', 'results', str(epoch) + '_trained_model.pth'))
+        torch.save(model.state_dict(), os.path.join('data', 'results', str(epoch + 1) + '_trained_model.pth'))
 
 
 training_loop(num_epochs,
