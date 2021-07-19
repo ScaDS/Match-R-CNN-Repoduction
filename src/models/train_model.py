@@ -47,7 +47,7 @@ validation_data_dir = os.path.join('data', 'raw', 'validation', 'image')
 validation_coco = os.path.join('data', 'processed', 'deepfashion2_coco_validation.json')
 
 
-train_batch_size = 1
+train_batch_size = 6
 train_shuffle_dl = True
 num_workers_dl = 4
 num_epochs = 12
@@ -109,7 +109,7 @@ def make_target(anno1, anno2):
             if p1 == p2 and s1 == s2:
                 if s1 != torch.tensor([0]).to(device):
                     target = torch.tensor([1])
-    return target.repeat(100)
+    return target.repeat(600)
 
 
 def training_loop(num_epochs, opt, mod, loss_function, train_loader):
@@ -133,11 +133,6 @@ def training_loop(num_epochs, opt, mod, loss_function, train_loader):
             opt.step()
 
             loss_train += loss.item()
-
-        if epoch == 1 or epoch % 10 == 0:
-            print('{} Epoch {}, Training loss {}'.format(
-                datetime.now(), epoch,
-                loss_train / len(train_loader)))
 
         loss_val = 0.0
         mod.eval()
@@ -167,4 +162,3 @@ training_loop(num_epochs,
               CrossEntropyLoss(),
               train_loader)
 
-torch.save(model.state_dict(), os.path.join('data', 'results', 'trained_model.pth'))
