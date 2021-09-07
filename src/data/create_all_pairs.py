@@ -54,7 +54,7 @@ def create_all_positive_pairs(coco_file: dict, shop: List[str], user: List[str])
                             if i.get('pair_id') == j.get('pair_id'):
                                 positive_pairs.append((i.get('image_id'), j.get('image_id')))
 
-    return positive_pairs
+    return list(set(positive_pairs))
 
 
 def create_negative_pairs(shop: List[str],
@@ -80,7 +80,8 @@ def create_negative_pairs(shop: List[str],
                         if j.get('image_id') in shop_set:
                             if i.get('category_id') == j.get('category_id'):
                                 if i.get('pair_id') != j.get('pair_id'):
-                                    negative_pairs.append((i.get('image_id'), j.get('image_id')))
+                                    # negative_pairs.append((i.get('image_id'), j.get('image_id')))
+                                    negative_pairs.append((i.get('image_id'), j.get('image_id'))) if (i.get('image_id'), j.get('image_id')) not in negative_pairs else negative_pairs
 
     return negative_pairs
 

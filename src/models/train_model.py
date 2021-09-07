@@ -1,11 +1,12 @@
 import os
-from datetime import datetime
 
 import numpy as np
 import torch
 import torch.utils.data
 import torchvision
+from torch import nn
 from torch.nn import CrossEntropyLoss
+from tqdm import tqdm
 
 from src.data.make_dataset import MakeDataset
 from src.features.get_features import get_features
@@ -47,7 +48,7 @@ validation_data_dir = os.path.join('data', 'raw', 'validation', 'image')
 validation_coco = os.path.join('data', 'processed', 'deepfashion2_coco_validation.json')
 
 
-train_batch_size = 6
+train_batch_size = 4
 train_shuffle_dl = True
 num_workers_dl = 4
 num_epochs = 12
@@ -84,7 +85,8 @@ validation_loader = torch.utils.data.DataLoader(
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-model = MatchingNet().to(device=device)
+model = MatchingNet()
+model = nn.DataParallel(model)
 model.to(device)
 
 params = [p for p in model.parameters() if p.requires_grad]
@@ -109,7 +111,7 @@ def make_target(anno1, anno2):
             if p1 == p2 and s1 == s2:
                 if s1 != torch.tensor([0]).to(device):
                     target = torch.tensor([1])
-    return target.repeat(600)
+    return target.repeat(400)
 
 
 def training_loop(num_epochs, opt, mod, loss_function, train_loader):
@@ -117,7 +119,8 @@ def training_loop(num_epochs, opt, mod, loss_function, train_loader):
     for epoch in range(1, num_epochs + 1):
         loss_train = 0.0
         mod.train()
-        for imgs1, imgs2, annotations1, annotations2 in train_loader:
+        print('train epoch: ', epoch)
+        for imgs1, imgs2, annotations1, annotations2 in tqdm(train_loader):
             # imgs1 = list(img1.to(device) for img1 in imgs1)
             # imgs2 = list(img2.to(device) for img2 in imgs2)
             imgs1 = get_features(imgs1).to(device)
@@ -132,12 +135,13 @@ def training_loop(num_epochs, opt, mod, loss_function, train_loader):
             loss.backward()
             opt.step()
 
-            loss_train += loss.item()
+            loss_train += float(loss.item())
 
         loss_val = 0.0
         mod.eval()
         with torch.no_grad():
-            for imgs1, imgs2, annotations1, annotations2 in validation_loader:
+            print('validation epoch: ', epoch)
+            for imgs1, imgs2, annotations1, annotations2 in tqdm(validation_loader):
                 imgs1 = get_features(imgs1).to(device)
                 imgs2 = get_features(imgs2).to(device)
                 annotations1 = [{k: v.to(device) for k, v in t.items()} for t in annotations1]
@@ -145,7 +149,7 @@ def training_loop(num_epochs, opt, mod, loss_function, train_loader):
                 outputs = mod(imgs1, imgs2)
                 target = make_target(annotations1, annotations2).to(device)
                 loss = loss_function(outputs, target)
-                loss_val += loss.item()
+                loss_val += float(loss.item())
 
         print(f'Epoch {epoch + 1} \t\t '
               f'Training Loss: {loss_train / len(train_loader)} \t\t '
@@ -156,6 +160,9 @@ def training_loop(num_epochs, opt, mod, loss_function, train_loader):
             torch.save(model.state_dict(), os.path.join('data', 'results', 'final_model.pth'))
 
         torch.save(model.state_dict(), os.path.join('data', 'results', str(epoch + 1) + '_trained_model.pth'))
+
+        if epoch == 9 or epoch == 11:
+            opt.param_groups[0]['lr'] = opt.param_groups[0]['lr'] * 0.01
 
 
 training_loop(num_epochs,
