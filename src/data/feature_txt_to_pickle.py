@@ -37,11 +37,6 @@ def main():
                         help='filepath',
                         type=str,
                         default=os.path.join('data', 'results', 'box_features_train.txt'))
-    parser.add_argument('-p',
-                        '--pairsfile',
-                        help='pairs file',
-                        type=str,
-                        default=os.path.join('data', 'processed', 'train_pairs.pkl'))
     args = parser.parse_args()
     file_path = args.filepath
 
