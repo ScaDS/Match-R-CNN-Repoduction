@@ -164,125 +164,125 @@ from src.data import create_all_pairs, feature_txt_to_pickle
 #     def __len__(self):
 #         return len(self.ids)
 
-class MakeDataset(torch.utils.data.Dataset):
-    def __init__(self,
-                 root,
-                 annotation,
-                 transforms=None,
-                 pairs=os.path.join('data', 'processed', 'train_pairs.pkl'),
-                 features=os.path.join('data', 'results', 'features')):
-        self.root = root
-        self.transforms = transforms
-        self.coco = COCO(annotation)
-        # self.ids = list(sorted(self.coco.imgs.keys()))
-        self.pair_ids = create_all_pairs.load_pairs(pairs)
-        self.pairs = feature_txt_to_pickle.make_pairs_features_list(features, pairs)
-        self.features = features
+# class MakeDataset(torch.utils.data.Dataset):
+#     def __init__(self,
+#                  root,
+#                  annotation,
+#                  transforms=None,
+#                  pairs=os.path.join('data', 'processed', 'train_pairs.pkl'),
+#                  features=os.path.join('data', 'results', 'features')):
+#         self.root = root
+#         self.transforms = transforms
+#         self.coco = COCO(annotation)
+#         # self.ids = list(sorted(self.coco.imgs.keys()))
+#         self.pair_ids = create_all_pairs.load_pairs(pairs)
+#         self.pairs = feature_txt_to_pickle.make_pairs_features_list(features, pairs)
+#         self.features = features
+#
+#     def __getitem__(self, index):
+#         # Own coco file
+#         coco = self.coco
+#         # Image ID
+#         img_id1 = self.pair_ids[index][0]
+#         img_id2 = self.pair_ids[index][1]
+#         # List: get annotation id from coco
+#         ann_ids1 = coco.getAnnIds(imgIds=[img_id1])
+#         ann_ids2 = coco.getAnnIds(imgIds=[img_id2])
+#         # Dictionary: target coco_annotation file for an image
+#         coco_annotation1 = coco.loadAnns(ann_ids1)
+#         coco_annotation2 = coco.loadAnns(ann_ids2)
+#         # number of objects in the image
+#         num_objs1 = len(coco_annotation1)
+#         num_objs2 = len(coco_annotation2)
+#
+#         # Category ID
+#         for i in range(num_objs1):
+#             a = torch.zeros(13, dtype=torch.int64)
+#             a[coco_annotation1[i]["category_id"] - 1] = 1
+#         cat_id1 = a
+#         for i in range(num_objs2):
+#             b = torch.zeros(13, dtype=torch.int64)
+#             b[coco_annotation2[i]["category_id"] - 1] = 1
+#         cat_id2 = b
+#
+#         # ID
+#         ident1 = []
+#         for i in range(num_objs1):
+#             ident1.append(coco_annotation1[i]["id"])
+#         ident1 = torch.as_tensor(ident1, dtype=torch.float32)
+#         ident2 = []
+#         for i in range(num_objs2):
+#             ident2.append(coco_annotation2[i]["id"])
+#         ident2 = torch.as_tensor(ident2, dtype=torch.float32)
+#
+#         # Pair_ID
+#         pair_id1 = []
+#         for i in range(num_objs1):
+#             pair_id1.append(coco_annotation1[i]["pair_id"])
+#         pair_id1 = torch.as_tensor(pair_id1, dtype=torch.float32)
+#         pair_id2 = []
+#         for i in range(num_objs2):
+#             pair_id2.append(coco_annotation2[i]["pair_id"])
+#         pair_id2 = torch.as_tensor(pair_id2, dtype=torch.float32)
+#
+#         # Tensorise img_id
+#         img_id1 = torch.tensor([int(img_id1)])
+#         img_id2 = torch.tensor([int(img_id2)])
+#
+#         # Style
+#         style1 = []
+#         for i in range(num_objs1):
+#             style1.append(coco_annotation1[i]["style"])
+#         style1 = torch.as_tensor(style1, dtype=torch.float32)
+#         style2 = []
+#         for i in range(num_objs2):
+#             style2.append(coco_annotation2[i]["style"])
+#         style2 = torch.as_tensor(style2, dtype=torch.float32)
+#
+#         # Annotation is in dictionary format
+#         my_annotation1 = {"labels": cat_id1,
+#                           "id": ident1,
+#                           "pair_id": pair_id1,
+#                           "image_id": img_id1,
+#                           "style": style1}
+#         my_annotation2 = {"labels": cat_id2,
+#                           "id": ident2,
+#                           "pair_id": pair_id2,
+#                           "image_id": img_id2,
+#                           "style": style2}
+#
+#         return img1, img2, my_annotation1, my_annotation2
+#
+#     def __len__(self):
+#         return len(self.pair_ids)
 
-    def __getitem__(self, index):
-        # Own coco file
-        coco = self.coco
-        # Image ID
-        img_id1 = self.pair_ids[index][0]
-        img_id2 = self.pair_ids[index][1]
-        # List: get annotation id from coco
-        ann_ids1 = coco.getAnnIds(imgIds=[img_id1])
-        ann_ids2 = coco.getAnnIds(imgIds=[img_id2])
-        # Dictionary: target coco_annotation file for an image
-        coco_annotation1 = coco.loadAnns(ann_ids1)
-        coco_annotation2 = coco.loadAnns(ann_ids2)
-        # number of objects in the image
-        num_objs1 = len(coco_annotation1)
-        num_objs2 = len(coco_annotation2)
 
-        # Category ID
-        for i in range(num_objs1):
-            a = torch.zeros(13, dtype=torch.int64)
-            a[coco_annotation1[i]["category_id"] - 1] = 1
-        cat_id1 = a
-        for i in range(num_objs2):
-            b = torch.zeros(13, dtype=torch.int64)
-            b[coco_annotation2[i]["category_id"] - 1] = 1
-        cat_id2 = b
-
-        # ID
-        ident1 = []
-        for i in range(num_objs1):
-            ident1.append(coco_annotation1[i]["id"])
-        ident1 = torch.as_tensor(ident1, dtype=torch.float32)
-        ident2 = []
-        for i in range(num_objs2):
-            ident2.append(coco_annotation2[i]["id"])
-        ident2 = torch.as_tensor(ident2, dtype=torch.float32)
-
-        # Pair_ID
-        pair_id1 = []
-        for i in range(num_objs1):
-            pair_id1.append(coco_annotation1[i]["pair_id"])
-        pair_id1 = torch.as_tensor(pair_id1, dtype=torch.float32)
-        pair_id2 = []
-        for i in range(num_objs2):
-            pair_id2.append(coco_annotation2[i]["pair_id"])
-        pair_id2 = torch.as_tensor(pair_id2, dtype=torch.float32)
-
-        # Tensorise img_id
-        img_id1 = torch.tensor([int(img_id1)])
-        img_id2 = torch.tensor([int(img_id2)])
-
-        # Style
-        style1 = []
-        for i in range(num_objs1):
-            style1.append(coco_annotation1[i]["style"])
-        style1 = torch.as_tensor(style1, dtype=torch.float32)
-        style2 = []
-        for i in range(num_objs2):
-            style2.append(coco_annotation2[i]["style"])
-        style2 = torch.as_tensor(style2, dtype=torch.float32)
-
-        # Annotation is in dictionary format
-        my_annotation1 = {"labels": cat_id1,
-                          "id": ident1,
-                          "pair_id": pair_id1,
-                          "image_id": img_id1,
-                          "style": style1}
-        my_annotation2 = {"labels": cat_id2,
-                          "id": ident2,
-                          "pair_id": pair_id2,
-                          "image_id": img_id2,
-                          "style": style2}
-
-        return img1, img2, my_annotation1, my_annotation2
-
-    def __len__(self):
-        return len(self.pair_ids)
-
-
-class TrainedFeaturesDataset(torch.utils.data.Dataset):
-    """ Dataset to get pairwise trained features"""
-
-    def __init__(self, feature_list, root_dir, annotation, pairs, transform=None):
-        """
-        Args:
-            feature_list (list): List with all features.
-            root_dir (string): Directory with all the annotations.
-            annotation (string): Path to coco file.
-            pairs (list): List with all pairs.
-            transform (callable, optional): Optional transform to be applied
-                on a sample.
-        """
-        self.feature_list = feature_list
-        self.root_dir = root_dir
-        self.coco = COCO(annotation)
-        self.pairs = pairs
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.feature_list)
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-            # Own coco file
-            coco = self.coco
+# class TrainedFeaturesDataset(torch.utils.data.Dataset):
+#     """ Dataset to get pairwise trained features"""
+#
+#     def __init__(self, feature_list, root_dir, annotation, pairs, transform=None):
+#         """
+#         Args:
+#             feature_list (list): List with all features.
+#             root_dir (string): Directory with all the annotations.
+#             annotation (string): Path to coco file.
+#             pairs (list): List with all pairs.
+#             transform (callable, optional): Optional transform to be applied
+#                 on a sample.
+#         """
+#         self.feature_list = feature_list
+#         self.root_dir = root_dir
+#         self.coco = COCO(annotation)
+#         self.pairs = pairs
+#         self.transform = transform
+#
+#     def __len__(self):
+#         return len(self.feature_list)
+#
+#     def __getitem__(self, idx):
+#         if torch.is_tensor(idx):
+#             idx = idx.tolist()
+#             # Own coco file
+#             coco = self.coco
 
 
