@@ -48,11 +48,35 @@ def get_box_features(images_list, model):
     return feats, pred_instances
 
 
-def make_features_list(image_dir, model):
+# def make_features_list(image_dir, model):
+#
+#     image_list = listdir(image_dir)
+#
+#     feature_file = open(os.path.join('data', 'results', 'new_box_features_train.txt'), 'a')
+#
+#     with torch.no_grad():
+#         for img in tqdm(image_list):
+#             img_path = os.path.join(image_dir, img)
+#             image = cv2.imread(img_path)
+#             height, width = image.shape[:2]
+#             image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
+#             inputs = [{"image": image, "height": height, "width": width}]
+#
+#             # feature = get_features(inputs, model)
+#             feature, pred_instances = get_box_features(inputs, model)
+#             # feature_file.write('id:')
+#             # feature_file.write(Path(img).stem)
+#             # feature_file.write(str(list(feature[0])))
+#
+#             for feat in feature:
+#                 feature_file.write(Path(img).stem + ' ' + str(feat.tolist()) + '\n')
+#             for pred in pred_instances:
+#                 feature_file.write(Path(img).stem + ' ' + str(pred) + '\n')
+#         feature_file.close()
 
+
+def make_features(image_dir, model):
     image_list = listdir(image_dir)
-
-    feature_file = open(os.path.join('data', 'results', 'box_features_train.txt'), 'a')
 
     with torch.no_grad():
         for img in tqdm(image_list):
@@ -62,16 +86,12 @@ def make_features_list(image_dir, model):
             image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
             inputs = [{"image": image, "height": height, "width": width}]
 
-            # feature = get_features(inputs, model)
-            feature = get_box_features(inputs, model)
-            # feature_file.write('id:')
-            # feature_file.write(Path(img).stem)
-            # feature_file.write(str(list(feature[0])))
+            feature, pred_instances = get_box_features(inputs, model)
 
-            for feat in feature[0]:
-                feature_file.write(Path(img).stem + ' ' + str(feat.tolist()) + '\n')
-
-        feature_file.close()
+            feature_file = open(os.path.join('data', 'results', 'features', Path(img).stem), 'a')
+            feature_file.write(str(feature.tolist()) + '\n')
+            feature_file.write(str(pred_instances) + '\n')
+            feature_file.close()
 
 
 def main():
@@ -97,7 +117,7 @@ def main():
     DetectionCheckpointer(model).load(cfg.MODEL.WEIGHTS)
     model.eval()
 
-    make_features_list(args.path, model)
+    make_features(args.path, model)
 
 
 if __name__ == '__main__':

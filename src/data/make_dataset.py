@@ -170,7 +170,7 @@ class MakeDataset(torch.utils.data.Dataset):
                  annotation,
                  transforms=None,
                  pairs=os.path.join('data', 'processed', 'train_pairs.pkl'),
-                 features=os.path.join('data', 'results', 'box_features_train.txt')):
+                 features=os.path.join('data', 'results', 'features')):
         self.root = root
         self.transforms = transforms
         self.coco = COCO(annotation)
