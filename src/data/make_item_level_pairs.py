@@ -116,22 +116,22 @@ def main():
                         '--pairs',
                         help='path to pairs pickle file',
                         type=str,
-                        default=os.path.join('data', 'processed', 'train_pairs.pkl'))
+                        default=os.path.join('data', 'processed', 'validation_pairs.pkl'))
     parser.add_argument('-d',
                         '--feat_dir',
                         help='path to features directory',
                         type=str,
-                        default=os.path.join('data', 'results', 'features'))
+                        default=os.path.join('data', 'results', 'val_features'))
     parser.add_argument('-j',
                         '--json_dir',
                         help='path to json directory',
                         type=str,
-                        default=os.path.join('data', 'raw', 'train', 'annos'))
+                        default=os.path.join('data', 'raw', 'validation', 'annos'))
     parser.add_argument('-t',
                         '--target_path',
                         help='path to target',
                         type=str,
-                        default=os.path.join('data', 'processed', 'item_level_pairs.pkl'))
+                        default=os.path.join('data', 'processed', 'val_item_level_pairs.pkl'))
     args = parser.parse_args()
 
     pairs_file_path = args.pairs

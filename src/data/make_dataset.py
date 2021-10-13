@@ -257,32 +257,31 @@ from src.data import create_all_pairs, feature_txt_to_pickle
 #         return len(self.pair_ids)
 
 
-# class TrainedFeaturesDataset(torch.utils.data.Dataset):
-#     """ Dataset to get pairwise trained features"""
-#
-#     def __init__(self, feature_list, root_dir, annotation, pairs, transform=None):
-#         """
-#         Args:
-#             feature_list (list): List with all features.
-#             root_dir (string): Directory with all the annotations.
-#             annotation (string): Path to coco file.
-#             pairs (list): List with all pairs.
-#             transform (callable, optional): Optional transform to be applied
-#                 on a sample.
-#         """
-#         self.feature_list = feature_list
-#         self.root_dir = root_dir
-#         self.coco = COCO(annotation)
-#         self.pairs = pairs
-#         self.transform = transform
-#
-#     def __len__(self):
-#         return len(self.feature_list)
-#
-#     def __getitem__(self, idx):
-#         if torch.is_tensor(idx):
-#             idx = idx.tolist()
-#             # Own coco file
-#             coco = self.coco
+class MakeDataset(torch.utils.data.Dataset):
+    """ Dataset to get pairwise trained features"""
 
+    def __init__(self, pairs_feature_list, transform=None):
+        """
+        Args:
+            pairs_feature_list (list): List with all features.
+            transform (callable, optional): Optional transform to be applied on a sample.
+        """
+        self.pairs_feature_list = pairs_feature_list
+        self.transform = transform
 
+    def __len__(self):
+        return len(self.pairs_feature_list)
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+        feature_1 = self.pairs_feature_list[idx][0][1]
+        feature_2 = self.pairs_feature_list[idx][1][1]
+        pair = self.pairs_feature_list[idx][2]
+
+        target = torch.tensor([0])
+        if pair:
+            target = torch.tensor([1])
+        my_annotation = {"pair": target}
+
+        return feature_1, feature_2, my_annotation

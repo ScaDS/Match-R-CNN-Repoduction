@@ -88,7 +88,7 @@ def make_features(image_dir, model):
 
             feature, pred_instances = get_box_features(inputs, model)
 
-            feature_file = open(os.path.join('data', 'results', 'features', Path(img).stem), 'a')
+            feature_file = open(os.path.join('data', 'results', 'val_features', Path(img).stem), 'a')
             feature_file.write(str(feature.tolist()) + '\n')
             feature_file.write(str(pred_instances) + '\n')
             feature_file.close()
@@ -101,8 +101,7 @@ def main():
                         '--path',
                         help='image path',
                         type=str,
-                        default=os.path.join('data', 'raw', 'train', 'image'))
-                        # default='test_feat')
+                        default=os.path.join('data', 'raw', 'validation', 'image'))
     args = parser.parse_args()
 
     cfg = get_cfg()

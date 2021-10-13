@@ -100,7 +100,7 @@ def main():
                         help='choose between training and validation',
                         choices=['train', 'validation', 'test'],
                         nargs='?',
-                        default='train')
+                        default='validation')
     args = parser.parse_args()
 
     file = os.path.join('data', 'processed', 'deepfashion2_coco_' + args.set + '.json')

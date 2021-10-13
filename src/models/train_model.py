@@ -1,4 +1,5 @@
 import os
+import pickle
 
 import numpy as np
 import torch
@@ -42,11 +43,18 @@ def collate_fn(batch):
 #
 #     return model
 
-train_data_dir = os.path.join('data', 'raw', 'train', 'image')
-train_coco = os.path.join('data', 'processed', 'deepfashion2_coco_train.json')
-validation_data_dir = os.path.join('data', 'raw', 'validation', 'image')
-validation_coco = os.path.join('data', 'processed', 'deepfashion2_coco_validation.json')
+# train_data_dir = os.path.join('data', 'raw', 'train', 'image')
+# train_coco = os.path.join('data', 'processed', 'deepfashion2_coco_train.json')
+# validation_data_dir = os.path.join('data', 'raw', 'validation', 'image')
+# validation_coco = os.path.join('data', 'processed', 'deepfashion2_coco_validation.json')
+train_pairs_list_path = os.path.join('data', 'processed', 'item_level_pairs.pkl')
+validation_pairs_list_path = os.path.join('data', 'processed', 'val_item_level_pairs.pkl')
 
+with open(train_pairs_list_path, 'rb') as f:
+    train_pairs = pickle.load(f)
+
+with open(validation_pairs_list_path, 'rb') as f:
+    validation_pairs = pickle.load(f)
 
 train_batch_size = 4
 train_shuffle_dl = True
@@ -58,30 +66,38 @@ weight_decay = 0.005
 
 print("Torch version:", torch.__version__)
 
+# my_dataset = MakeDataset(
+#     root=train_data_dir,
+#     annotation=train_coco,
+#     transforms=get_transform())
+
+# my_validationset = MakeDataset(
+#     root=validation_data_dir,
+#     annotation=validation_coco,
+#     transforms=get_transform(),
+#     path=os.path.join('data', 'processed', 'validation_pairs.pkl'))
+
 my_dataset = MakeDataset(
-    root=train_data_dir,
-    annotation=train_coco,
-    transforms=get_transform())
+    pairs_feature_list=train_pairs
+)
 
 my_validationset = MakeDataset(
-    root=validation_data_dir,
-    annotation=validation_coco,
-    transforms=get_transform(),
-    path=os.path.join('data', 'processed', 'validation_pairs.pkl'))
+    pairs_feature_list=validation_pairs
+)
 
 train_loader = torch.utils.data.DataLoader(
     my_dataset,
     batch_size=train_batch_size,
     shuffle=train_shuffle_dl,
     num_workers=num_workers_dl,
-    collate_fn=collate_fn,)
+    collate_fn=collate_fn, )
 
 validation_loader = torch.utils.data.DataLoader(
     my_validationset,
     batch_size=train_batch_size,
     shuffle=train_shuffle_dl,
     num_workers=num_workers_dl,
-    collate_fn=collate_fn,)
+    collate_fn=collate_fn, )
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
@@ -100,36 +116,18 @@ optimizer = torch.optim.SGD(
 len_trainloader = len(train_loader)
 
 
-def make_target(anno1, anno2):
-    pair1 = anno1[0]['pair_id']
-    pair2 = anno2[0]['pair_id']
-    style1 = anno1[0]['style']
-    style2 = anno2[0]['style']
-    target = torch.tensor([0])
-    for p1, s1 in zip(pair1, style1):
-        for p2, s2 in zip(pair2, style2):
-            if p1 == p2 and s1 == s2:
-                if s1 != torch.tensor([0]).to(device):
-                    target = torch.tensor([1])
-    return target.repeat(400)
-
-
-def training_loop(num_epochs, opt, mod, loss_function, train_loader):
+def training_loop(n_epochs, opt, mod, loss_function, trainloader, validationloader):
     min_loss_val = np.inf
-    for epoch in range(1, num_epochs + 1):
+    for epoch in range(1, n_epochs + 1):
         loss_train = 0.0
         mod.train()
         print('train epoch: ', epoch)
-        for imgs1, imgs2, annotations1, annotations2 in tqdm(train_loader):
-            # imgs1 = list(img1.to(device) for img1 in imgs1)
-            # imgs2 = list(img2.to(device) for img2 in imgs2)
-            imgs1 = get_features(imgs1).to(device)
-            imgs2 = get_features(imgs2).to(device)
-            annotations1 = [{k: v.to(device) for k, v in t.items()} for t in annotations1]
-            annotations2 = [{k: v.to(device) for k, v in t.items()} for t in annotations2]
-            outputs = mod(imgs1, imgs2)
-            target = make_target(annotations1, annotations2).to(device)
-            loss = loss_function(outputs, target)
+        for feature1, feature2, annotation in tqdm(trainloader):
+            feat1 = feature1.to(device)
+            feat2 = feature2.to(device)
+            annotation = [{k: v.to(device) for k, v in t.items()} for t in annotation]
+            outputs = mod(feat1, feat2)
+            loss = loss_function(outputs, annotation)
 
             opt.zero_grad()
             loss.backward()
@@ -141,14 +139,12 @@ def training_loop(num_epochs, opt, mod, loss_function, train_loader):
         mod.eval()
         with torch.no_grad():
             print('validation epoch: ', epoch)
-            for imgs1, imgs2, annotations1, annotations2 in tqdm(validation_loader):
-                imgs1 = get_features(imgs1).to(device)
-                imgs2 = get_features(imgs2).to(device)
-                annotations1 = [{k: v.to(device) for k, v in t.items()} for t in annotations1]
-                annotations2 = [{k: v.to(device) for k, v in t.items()} for t in annotations2]
-                outputs = mod(imgs1, imgs2)
-                target = make_target(annotations1, annotations2).to(device)
-                loss = loss_function(outputs, target)
+            for feature1, feature2, annotation in tqdm(validationloader):
+                feat1 = feature1.to(device)
+                feat2 = feature2.to(device)
+                annotation = [{k: v.to(device) for k, v in t.items()} for t in annotation]
+                outputs = mod(feat1, feat2)
+                loss = loss_function(outputs, annotation)
                 loss_val += float(loss.item())
 
         print(f'Epoch {epoch + 1} \t\t '
@@ -165,9 +161,79 @@ def training_loop(num_epochs, opt, mod, loss_function, train_loader):
             opt.param_groups[0]['lr'] = opt.param_groups[0]['lr'] * 0.01
 
 
-training_loop(num_epochs,
-              optimizer,
-              model,
-              CrossEntropyLoss(),
-              train_loader)
+def main():
+    training_loop(num_epochs,
+                  optimizer,
+                  model,
+                  CrossEntropyLoss(),
+                  train_loader,
+                  validation_loader)
 
+
+if __name__ == '__main__':
+    main()
+
+
+# def make_target(anno1, anno2):
+#     pair1 = anno1[0]['pair_id']
+#     pair2 = anno2[0]['pair_id']
+#     style1 = anno1[0]['style']
+#     style2 = anno2[0]['style']
+#     target = torch.tensor([0])
+#     for p1, s1 in zip(pair1, style1):
+#         for p2, s2 in zip(pair2, style2):
+#             if p1 == p2 and s1 == s2:
+#                 if s1 != torch.tensor([0]).to(device):
+#                     target = torch.tensor([1])
+#     return target.repeat(400)
+
+
+# def training_loop(num_epochs, opt, mod, loss_function, train_loader):
+#     min_loss_val = np.inf
+#     for epoch in range(1, num_epochs + 1):
+#         loss_train = 0.0
+#         mod.train()
+#         print('train epoch: ', epoch)
+#         for imgs1, imgs2, annotations1, annotations2 in tqdm(train_loader):
+#             # imgs1 = list(img1.to(device) for img1 in imgs1)
+#             # imgs2 = list(img2.to(device) for img2 in imgs2)
+#             imgs1 = get_features(imgs1).to(device)
+#             imgs2 = get_features(imgs2).to(device)
+#             annotations1 = [{k: v.to(device) for k, v in t.items()} for t in annotations1]
+#             annotations2 = [{k: v.to(device) for k, v in t.items()} for t in annotations2]
+#             outputs = mod(imgs1, imgs2)
+#             target = make_target(annotations1, annotations2).to(device)
+#             loss = loss_function(outputs, target)
+#
+#             opt.zero_grad()
+#             loss.backward()
+#             opt.step()
+#
+#             loss_train += float(loss.item())
+#
+#         loss_val = 0.0
+#         mod.eval()
+#         with torch.no_grad():
+#             print('validation epoch: ', epoch)
+#             for imgs1, imgs2, annotations1, annotations2 in tqdm(validation_loader):
+#                 imgs1 = get_features(imgs1).to(device)
+#                 imgs2 = get_features(imgs2).to(device)
+#                 annotations1 = [{k: v.to(device) for k, v in t.items()} for t in annotations1]
+#                 annotations2 = [{k: v.to(device) for k, v in t.items()} for t in annotations2]
+#                 outputs = mod(imgs1, imgs2)
+#                 target = make_target(annotations1, annotations2).to(device)
+#                 loss = loss_function(outputs, target)
+#                 loss_val += float(loss.item())
+#
+#         print(f'Epoch {epoch + 1} \t\t '
+#               f'Training Loss: {loss_train / len(train_loader)} \t\t '
+#               f'Validation Loss: {loss_val / len(validation_loader)}')
+#         if min_loss_val > loss_val:
+#             print(f'Validation Loss Decreased({min_loss_val:.6f}--->{loss_val:.6f}) \t Saving The Model')
+#             min_loss_val = loss_val
+#             torch.save(model.state_dict(), os.path.join('data', 'results', 'final_model.pth'))
+#
+#         torch.save(model.state_dict(), os.path.join('data', 'results', str(epoch + 1) + '_trained_model.pth'))
+#
+#         if epoch == 9 or epoch == 11:
+#             opt.param_groups[0]['lr'] = opt.param_groups[0]['lr'] * 0.01
