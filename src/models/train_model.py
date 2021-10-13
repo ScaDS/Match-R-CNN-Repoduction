@@ -8,6 +8,7 @@ import torchvision
 from torch import nn
 from torch.nn import CrossEntropyLoss
 from tqdm import tqdm
+import torch.multiprocessing
 
 from src.data.make_dataset import MakeDataset
 
@@ -52,13 +53,16 @@ validation_pairs_list_path = os.path.join('data', 'processed', 'val_item_level_p
 
 with open(train_pairs_list_path, 'rb') as f:
     train_pairs = pickle.load(f)
+    f.close()
 
 with open(validation_pairs_list_path, 'rb') as f:
     validation_pairs = pickle.load(f)
+    f.close()
 
-train_batch_size = 4
+train_batch_size = 8
 train_shuffle_dl = True
-num_workers_dl = 4
+# num_workers_dl = 4
+num_workers_dl = 0
 num_epochs = 12
 lr = 0.02
 momentum = 0.9
@@ -125,7 +129,6 @@ def training_loop(n_epochs, opt, mod, loss_function, trainloader, validationload
         for feature1, feature2, annotation in tqdm(trainloader):
             feat1 = torch.cat([torch.unsqueeze(f1, 0) for f1 in feature1]).to(device)
             feat2 = torch.cat([torch.unsqueeze(f2, 0) for f2 in feature2]).to(device)
-            # annotation = [{k: v.to(device) for k, v in t.items()} for t in annotation]
             anno = torch.cat([torch.unsqueeze(a, 0) for a in annotation]).to(device)
             outputs = mod(feat1.unsqueeze(1), feat2.unsqueeze(1))
 
@@ -142,11 +145,11 @@ def training_loop(n_epochs, opt, mod, loss_function, trainloader, validationload
         with torch.no_grad():
             print('validation epoch: ', epoch)
             for feature1, feature2, annotation in tqdm(validationloader):
-                feat1 = feature1.to(device)
-                feat2 = feature2.to(device)
-                annotation = [{k: v.to(device) for k, v in t.items()} for t in annotation]
-                outputs = mod(feat1, feat2)
-                loss = loss_function(outputs, annotation)
+                feat1 = torch.cat([torch.unsqueeze(f1, 0) for f1 in feature1]).to(device)
+                feat2 = torch.cat([torch.unsqueeze(f2, 0) for f2 in feature2]).to(device)
+                anno = torch.cat([torch.unsqueeze(a, 0) for a in annotation]).to(device)
+                outputs = mod(feat1.unsqueeze(1), feat2.unsqueeze(1))
+                loss = loss_function(outputs, anno.squeeze(1))
                 loss_val += float(loss.item())
 
         print(f'Epoch {epoch + 1} \t\t '
@@ -164,6 +167,8 @@ def training_loop(n_epochs, opt, mod, loss_function, trainloader, validationload
 
 
 def main():
+    torch.multiprocessing.set_sharing_strategy('file_system')
+
     training_loop(num_epochs,
                   optimizer,
                   model,
