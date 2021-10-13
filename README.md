@@ -6,7 +6,7 @@ Reproducing the fashion image categorization and retrieval baseline approach fro
 
 ## Procedure
 
-###Data-preparation
+### Data-preparation
 * download deepfashion2 dataset
 * run src/data/split_dataset.py on train dataset
 * run src/data/deepfashion2_to_coco.py with train, validation and test dataset
