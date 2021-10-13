@@ -10,7 +10,7 @@ from torch.nn import CrossEntropyLoss
 from tqdm import tqdm
 
 from src.data.make_dataset import MakeDataset
-from src.features.get_features import get_features
+
 from src.models.matching_network import MatchingNet
 
 
@@ -123,11 +123,13 @@ def training_loop(n_epochs, opt, mod, loss_function, trainloader, validationload
         mod.train()
         print('train epoch: ', epoch)
         for feature1, feature2, annotation in tqdm(trainloader):
-            feat1 = feature1.to(device)
-            feat2 = feature2.to(device)
-            annotation = [{k: v.to(device) for k, v in t.items()} for t in annotation]
-            outputs = mod(feat1, feat2)
-            loss = loss_function(outputs, annotation)
+            feat1 = torch.cat([torch.unsqueeze(f1, 0) for f1 in feature1]).to(device)
+            feat2 = torch.cat([torch.unsqueeze(f2, 0) for f2 in feature2]).to(device)
+            # annotation = [{k: v.to(device) for k, v in t.items()} for t in annotation]
+            anno = torch.cat([torch.unsqueeze(a, 0) for a in annotation]).to(device)
+            outputs = mod(feat1.unsqueeze(1), feat2.unsqueeze(1))
+
+            loss = loss_function(outputs, anno.squeeze(1))
 
             opt.zero_grad()
             loss.backward()
