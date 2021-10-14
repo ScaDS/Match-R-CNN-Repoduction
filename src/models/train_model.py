@@ -63,10 +63,10 @@ train_batch_size = 8
 train_shuffle_dl = True
 # num_workers_dl = 4
 num_workers_dl = 0
-num_epochs = 12
+num_epochs = 30
 lr = 0.02
 momentum = 0.9
-weight_decay = 0.005
+weight_decay = 0.005  # 0.00001
 
 print("Torch version:", torch.__version__)
 
@@ -163,7 +163,7 @@ def training_loop(n_epochs, opt, mod, loss_function, trainloader, validationload
         torch.save(model.state_dict(), os.path.join('data', 'results', str(epoch + 1) + '_trained_model.pth'))
 
         if epoch == 9 or epoch == 11:
-            opt.param_groups[0]['lr'] = opt.param_groups[0]['lr'] * 0.01
+            opt.param_groups[0]['lr'] = opt.param_groups[0]['lr'] * 0.1
 
 
 def main():
@@ -179,7 +179,6 @@ def main():
 
 if __name__ == '__main__':
     main()
-
 
 # def make_target(anno1, anno2):
 #     pair1 = anno1[0]['pair_id']

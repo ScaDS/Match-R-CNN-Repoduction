@@ -1,5 +1,6 @@
 import argparse
 import os
+import pickle
 from os import listdir
 from pathlib import Path
 
@@ -24,7 +25,7 @@ def get_features(images_list, model):
         mask_features = [features[f] for f in model.roi_heads.in_features]
         mask_features = model.roi_heads.mask_pooler(mask_features, [x.pred_boxes for x in instances])
 
-    return mask_features
+    return mask_features, instances
 
 
 def get_box_features(images_list, model):
@@ -75,7 +76,7 @@ def get_box_features(images_list, model):
 #         feature_file.close()
 
 
-def make_features(image_dir, model):
+def make_features(image_dir, model, target_dir):
     image_list = listdir(image_dir)
 
     with torch.no_grad():
@@ -86,22 +87,46 @@ def make_features(image_dir, model):
             image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
             inputs = [{"image": image, "height": height, "width": width}]
 
-            feature, pred_instances = get_box_features(inputs, model)
+            feature, pred_instances = get_features(inputs, model)
 
-            feature_file = open(os.path.join('data', 'results', 'val_features', Path(img).stem), 'a')
-            feature_file.write(str(feature.tolist()) + '\n')
-            feature_file.write(str(pred_instances) + '\n')
-            feature_file.close()
+            # feature_file = open(os.path.join(target_dir, Path(img).stem), 'a')
+            # feature_file.write(str(feature.tolist()) + '\n')
+            # feature_file.write(str(pred_instances) + '\n')
+            # feature_file.close()
+            with open(os.path.join(target_dir, Path(img).stem) + '.pkl', 'wb') as f:
+                pickle.dump((feature, pred_instances), f)
+                f.close()
+
+
+def test_make_features(image_dir, model):
+    image_list = listdir(image_dir)
+
+    with torch.no_grad():
+        for img in tqdm(image_list):
+            img_path = os.path.join(image_dir, img)
+            image = cv2.imread(img_path)
+            height, width = image.shape[:2]
+            image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
+            inputs = [{"image": image, "height": height, "width": width}]
+
+            feature, instances = get_features(inputs, model)
+            print('instances: ', instances)
+            print(feature.shape)
 
 
 def main():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p',
-                        '--path',
-                        help='image path',
+    parser.add_argument('-i',
+                        '--image_path',
+                        help='image dir path',
                         type=str,
-                        default=os.path.join('data', 'raw', 'validation', 'image'))
+                        default=os.path.join('data', 'raw', 'train', 'image'))
+    parser.add_argument('-t',
+                        '--target_dir',
+                        help='image dir path',
+                        type=str,
+                        default=os.path.join('data', 'results', 'pooled_features', 'train'))
     args = parser.parse_args()
 
     cfg = get_cfg()
@@ -109,6 +134,7 @@ def main():
     cfg.MODEL.WEIGHTS = os.path.join('output', 'model_final.pth')
     cfg.SOLVER.IMS_PER_BATCH = 1
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 13
+    cfg.MODEL.ROI_HEADS.IOU_THRESHOLDS = [0.7]
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7
     cfg.INPUT.MIN_SIZE_TEST = 800
 
@@ -116,7 +142,8 @@ def main():
     DetectionCheckpointer(model).load(cfg.MODEL.WEIGHTS)
     model.eval()
 
-    make_features(args.path, model)
+    # make_features(args.path, model)
+    make_features(args.image_path, model, args.target_dir)
 
 
 if __name__ == '__main__':
