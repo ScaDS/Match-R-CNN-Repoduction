@@ -1,6 +1,7 @@
 import argparse
 import os
 import pickle
+from collections import defaultdict
 from os import listdir
 from pathlib import Path
 
@@ -49,8 +50,30 @@ def get_features(images_list, model):
 #     return feats, pred_instances
 
 
+# def make_features(image_dir, model, target_dir):
+#     image_list = listdir(image_dir)
+#
+#     with torch.no_grad():
+#         for img in tqdm(image_list):
+#             img_path = os.path.join(image_dir, img)
+#             image = cv2.imread(img_path)
+#             height, width = image.shape[:2]
+#             image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
+#             inputs = [{"image": image, "height": height, "width": width}]
+#
+#             feature, pred_instances = get_features(inputs, model)
+#
+#             # feature_file = open(os.path.join(target_dir, Path(img).stem), 'a')
+#             # feature_file.write(str(feature.tolist()) + '\n')
+#             # feature_file.write(str(pred_instances) + '\n')
+#             # feature_file.close()
+#             with open(os.path.join(target_dir, Path(img).stem) + '.pkl', 'wb') as f:
+#                 pickle.dump((feature, pred_instances), f)
+#                 f.close()
+
 def make_features(image_dir, model, target_dir):
     image_list = listdir(image_dir)
+    feature_dict = defaultdict(list)
 
     with torch.no_grad():
         for img in tqdm(image_list):
@@ -62,13 +85,18 @@ def make_features(image_dir, model, target_dir):
 
             feature, pred_instances = get_features(inputs, model)
 
-            # feature_file = open(os.path.join(target_dir, Path(img).stem), 'a')
-            # feature_file.write(str(feature.tolist()) + '\n')
-            # feature_file.write(str(pred_instances) + '\n')
-            # feature_file.close()
-            with open(os.path.join(target_dir, Path(img).stem) + '.pkl', 'wb') as f:
-                pickle.dump((feature, pred_instances), f)
-                f.close()
+            idx = 0
+            for feat in feature:
+                feat_class = pred_instances[0].get('pred_classes')[idx].to(torch.device("cpu"))
+                with open(os.path.join(target_dir, Path(img).stem) + '_' + str(idx) + '.pkl', 'wb') as f:
+                    pickle.dump((feat.to(torch.device("cpu")), feat_class), f)
+                    f.close()
+                feature_dict[Path(img).stem].append((Path(img).stem + '_' + str(idx), feat_class))
+                idx += 1
+
+        with open(os.path.join('data', 'results', 'validation_feature_index_class_dict.pkl'), 'wb') as f:
+            pickle.dump(feature_dict, f)
+            f.close()
 
 
 def main():

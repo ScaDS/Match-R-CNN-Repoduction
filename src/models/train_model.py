@@ -1,10 +1,13 @@
 import os
 import pickle
+from os import listdir
+from os.path import join, isfile
 
 import numpy as np
 import torch
 import torch.utils.data
 import torchvision
+from matplotlib import pyplot as plt
 from torch import nn
 from torch.nn import CrossEntropyLoss
 from tqdm import tqdm
@@ -34,45 +37,31 @@ def collate_fn(batch):
     return tuple(zip(*batch))
 
 
-train_pairs_list_path = os.path.join('data', 'processed', 'item_level_pairs.pkl')
-validation_pairs_list_path = os.path.join('data', 'processed', 'val_item_level_pairs.pkl')
+train_pairs_path = os.path.join('data', 'results', 'final_training_item_pairs', 'train_item_pairs.pkl')
+train_features_path = os.path.join('data', 'results', 'pooled_features', 'train')
+validation_pairs_path = os.path.join('data', 'results', 'final_training_item_pairs', 'validation_item_pairs.pkl')
+validation_features_path = os.path.join('data', 'results', 'pooled_features', 'validation')
 
-with open(train_pairs_list_path, 'rb') as f:
-    train_pairs = pickle.load(f)
-    f.close()
 
-with open(validation_pairs_list_path, 'rb') as f:
-    validation_pairs = pickle.load(f)
-    f.close()
-
-train_batch_size = 8
+train_batch_size = 128
 train_shuffle_dl = True
 # num_workers_dl = 4
 num_workers_dl = 0
-num_epochs = 30
+num_epochs = 20
 lr = 0.02
 momentum = 0.9
 weight_decay = 0.005  # 0.00001
 
 print("Torch version:", torch.__version__)
 
-# my_dataset = MakeDataset(
-#     root=train_data_dir,
-#     annotation=train_coco,
-#     transforms=get_transform())
-
-# my_validationset = MakeDataset(
-#     root=validation_data_dir,
-#     annotation=validation_coco,
-#     transforms=get_transform(),
-#     path=os.path.join('data', 'processed', 'validation_pairs.pkl'))
-
 my_dataset = MakeDataset(
-    pairs_feature_list=train_pairs
+    item_pairs_list=train_pairs_path,
+    features_dir=train_features_path
 )
 
 my_validationset = MakeDataset(
-    pairs_feature_list=validation_pairs
+    item_pairs_list=validation_pairs_path,
+    features_dir=validation_features_path
 )
 
 train_loader = torch.utils.data.DataLoader(
@@ -80,14 +69,16 @@ train_loader = torch.utils.data.DataLoader(
     batch_size=train_batch_size,
     shuffle=train_shuffle_dl,
     num_workers=num_workers_dl,
-    collate_fn=collate_fn, )
+    collate_fn=collate_fn,
+    drop_last=True, )
 
 validation_loader = torch.utils.data.DataLoader(
     my_validationset,
     batch_size=train_batch_size,
     shuffle=train_shuffle_dl,
     num_workers=num_workers_dl,
-    collate_fn=collate_fn, )
+    collate_fn=collate_fn,
+    drop_last=True, )
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
@@ -108,15 +99,21 @@ len_trainloader = len(train_loader)
 
 def training_loop(n_epochs, opt, mod, loss_function, trainloader, validationloader):
     min_loss_val = np.inf
+
+    train_loss_values = []
+    validation_loss_values = []
+
     for epoch in range(1, n_epochs + 1):
         loss_train = 0.0
+        loss_val = 0.0
+
         mod.train()
         print('train epoch: ', epoch)
         for feature1, feature2, annotation in tqdm(trainloader):
-            feat1 = torch.cat([torch.unsqueeze(f1, 0) for f1 in feature1]).to(device)
-            feat2 = torch.cat([torch.unsqueeze(f2, 0) for f2 in feature2]).to(device)
+            feat1 = torch.cat([torch.unsqueeze(f1, 0) for f1 in feature1], 0).to(device)
+            feat2 = torch.cat([torch.unsqueeze(f2, 0) for f2 in feature2], 0).to(device)
             anno = torch.cat([torch.unsqueeze(a, 0) for a in annotation]).to(device)
-            outputs = mod(feat1.unsqueeze(1), feat2.unsqueeze(1))
+            outputs = mod(feat1, feat2)
 
             loss = loss_function(outputs, anno.squeeze(1))
 
@@ -124,19 +121,26 @@ def training_loop(n_epochs, opt, mod, loss_function, trainloader, validationload
             loss.backward()
             opt.step()
 
-            loss_train += float(loss.item())
+            loss_train += loss.item() * ((feat1.size(0) + feat2.size(0)) / 2)
 
-        loss_val = 0.0
+
         mod.eval()
         with torch.no_grad():
             print('validation epoch: ', epoch)
             for feature1, feature2, annotation in tqdm(validationloader):
-                feat1 = torch.cat([torch.unsqueeze(f1, 0) for f1 in feature1]).to(device)
-                feat2 = torch.cat([torch.unsqueeze(f2, 0) for f2 in feature2]).to(device)
+                feat1 = torch.cat([torch.unsqueeze(f1, 0) for f1 in feature1], 0).to(device)
+                feat2 = torch.cat([torch.unsqueeze(f2, 0) for f2 in feature2], 0).to(device)
                 anno = torch.cat([torch.unsqueeze(a, 0) for a in annotation]).to(device)
-                outputs = mod(feat1.unsqueeze(1), feat2.unsqueeze(1))
+                outputs = mod(feat1, feat2)
                 loss = loss_function(outputs, anno.squeeze(1))
-                loss_val += float(loss.item())
+                loss_val += loss.item() * ((feat1.size(0) + feat2.size(0)) / 2)
+
+                # predicted_classes = torch.argmax(outputs, dim=1) == 0
+                # target_classes = anno
+                # target_true += torch.sum(target_classes == 0).float()
+                # predicted_true += torch.sum(predicted_classes).float()
+                # correct_true += torch.sum(
+                #     predicted_classes == target_classes * predicted_classes == 0).float()
 
         print(f'Epoch {epoch + 1} \t\t '
               f'Training Loss: {loss_train / len(train_loader)} \t\t '
@@ -144,12 +148,22 @@ def training_loop(n_epochs, opt, mod, loss_function, trainloader, validationload
         if min_loss_val > loss_val:
             print(f'Validation Loss Decreased({min_loss_val:.6f}--->{loss_val:.6f}) \t Saving The Model')
             min_loss_val = loss_val
-            torch.save(model.state_dict(), os.path.join('data', 'results', 'final_model.pth'))
+            torch.save(model.state_dict(), os.path.join('data', 'results', 'model', 'final_model.pth'))
+        torch.save(model.state_dict(), os.path.join('data', 'results', 'model', str(epoch + 1) + '_trained_model.pth'))
 
-        torch.save(model.state_dict(), os.path.join('data', 'results', str(epoch + 1) + '_trained_model.pth'))
+        train_loss_values.append(loss_train / len(trainloader))
+        validation_loss_values.append(loss_val / len(validation_loader))
 
         if epoch == 9 or epoch == 11:
             opt.param_groups[0]['lr'] = opt.param_groups[0]['lr'] * 0.1
+
+    # recall = correct_true / target_true
+    # precision = correct_true / predicted_true
+
+    plt.plot(train_loss_values, 'r', label='train_loss')
+    plt.plot(validation_loss_values, 'b', label='validation_loss')
+    plt.legend(loc="upper right")
+    plt.savefig('test_test_06.png')
 
 
 def main():

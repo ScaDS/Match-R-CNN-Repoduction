@@ -8,7 +8,7 @@ from itertools import chain
 from tqdm import tqdm
 
 
-def shop_user_lists(path: str) -> Tuple[List[str], List[str]]:
+def shop_user_lists(path):
 
     shop_images_list = []
     user_images_list = []
@@ -38,7 +38,7 @@ def create_category_dict(coco_file: dict) -> dict:
     return category_dict
 
 
-def create_all_positive_pairs(coco_file: dict, shop: List[str], user: List[str]) -> List[Tuple[str, str]]:
+def create_all_positive_pairs(coco_file, shop, user):
 
     positive_pairs = []
     user_set = set(user)
@@ -52,38 +52,32 @@ def create_all_positive_pairs(coco_file: dict, shop: List[str], user: List[str])
                     if j.get('image_id') in shop_set:
                         if i.get('style') == j.get('style'):
                             if i.get('pair_id') == j.get('pair_id'):
-                                positive_pairs.append((i.get('image_id'), j.get('image_id')))
+                                if i.get('category_id') == j.get('category_id'):
+                                    positive_pairs.append((i.get('image_id'), j.get('image_id'), i.get('category_id')))
 
     return list(set(positive_pairs))
 
 
-def create_negative_pairs(shop: List[str],
-                          user: List[str],
-                          coco_file: dict,
-                          positive_pairs: List[Tuple[str, str]]) -> List[Tuple[str, str]]:
+def create_negative_pairs(coco_file, shop, user, positive_pairs):
 
     negative_pairs = []
     user_set = set(user)
     shop_set = set(shop)
 
-    print('creating negative pairs:')
-
+    print('creating all negative pairs:')
     for i in tqdm(coco_file.get('annotations')):
         if len(negative_pairs) >= len(positive_pairs):
             break
         else:
             if i.get('image_id') in user_set:
                 for j in coco_file.get('annotations'):
-                    if len(negative_pairs) >= len(positive_pairs):
-                        break
-                    else:
-                        if j.get('image_id') in shop_set:
-                            if i.get('category_id') == j.get('category_id'):
-                                if i.get('pair_id') != j.get('pair_id'):
-                                    # negative_pairs.append((i.get('image_id'), j.get('image_id')))
-                                    negative_pairs.append((i.get('image_id'), j.get('image_id'))) if (i.get('image_id'), j.get('image_id')) not in negative_pairs else negative_pairs
+                    if j.get('image_id') in shop_set:
+                        if i.get('style') != j.get('style'):
+                            if i.get('pair_id') == j.get('pair_id'):
+                                if i.get('category_id') == j.get('category_id'):
+                                    negative_pairs.append((i.get('image_id'), j.get('image_id'), None))
 
-    return negative_pairs
+    return list(set(negative_pairs))
 
 
 def load_pairs(pairs_pkl: str) -> List[Tuple[str, str]]:
@@ -131,7 +125,7 @@ def main():
         with open(positive_pkl, 'wb') as f:
             pickle.dump(positive_pairs, f)
 
-    negative_pairs = create_negative_pairs(shop, user, coco_file, positive_pairs)
+    negative_pairs = create_negative_pairs(coco_file, shop, user, positive_pairs)
     with open(os.path.join('data', 'processed', args.set + '_negative_pairs.pkl'), 'wb') as f:
         pickle.dump(negative_pairs, f)
 

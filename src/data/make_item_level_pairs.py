@@ -3,7 +3,6 @@ import json
 import os
 import pickle
 
-import torch
 from tqdm import tqdm
 
 
@@ -38,61 +37,62 @@ def check_cat_duplicates(list_to_check):
     return len(list_to_check) == len(set(list_to_check))
 
 
-def make_item_level_pairs(pairs_file_path, feature_dir_path, json_dir_path, target_path):
-    pairs_pred_instances_features = []
+def add_style(feat, style_cat_list):
+    feat_plus_style = ()
 
+    old_len = len(feat_plus_style)
+    for sc in style_cat_list:
+        if feat == sc[1]:
+            feat_plus_style += (feat, sc[0])
+    if old_len == len(feat_plus_style):
+        feat_plus_style += (feat, 0)
+
+    return feat_plus_style
+
+
+def make_item_pairs(feature_dict_path, annos_dir, target, pairs_file_path):
     with open(pairs_file_path, 'rb') as f:
         pairs_file = pickle.load(f)
         f.close()
 
-    count = 0
+    with open(feature_dict_path, 'rb') as f:
+        feature_dict = pickle.load(f)
+        f.close()
+
+    item_pairs = []
+
     for pair in tqdm(pairs_file):
-        with open(os.path.join(feature_dir_path, pair[0] + '.pkl'), "rb") as f:
-            a_partner = pickle.load(f)
-            f.close()
-        with open(os.path.join(feature_dir_path, pair[1] + '.pkl'), "rb") as f:
-            b_partner = pickle.load(f)
-            f.close()
+        a_features = feature_dict[pair[0]]
+        b_features = feature_dict[pair[1]]
+        pair_cat = pair[2]
 
-        a_feature_list = [f.to(torch.device("cpu")) for f in a_partner[0]]
-        b_feature_list = [f.to(torch.device("cpu")) for f in b_partner[0]]
+        a_style_cat_list = get_style_cat(os.path.join(annos_dir, pair[0] + '.json'))
+        b_style_cat_list = get_style_cat(os.path.join(annos_dir, pair[1] + '.json'))
 
-        a_cat_list = a_partner[1][0].get('pred_classes').to(torch.device("cpu")).tolist()
-        b_cat_list = b_partner[1][0].get('pred_classes').to(torch.device("cpu")).tolist()
+        if check_cat_duplicates([t[1] for t in a_features]) and check_cat_duplicates([t[1] for t in b_features]):
+            for a_feat in a_features:
+                for b_feat in b_features:
+                    if a_feat[1] == b_feat[1]:
+                        a_feature_style = add_style(int(a_feat[1]), a_style_cat_list)
+                        b_feature_style = add_style(int(b_feat[1]), b_style_cat_list)
 
-        # from annotation json file
-        a_style_cat_list = get_style_cat(os.path.join(json_dir_path, pair[0] + '.json'))
-        b_style_cat_list = get_style_cat(os.path.join(json_dir_path, pair[1] + '.json'))
+                        if pair_cat is None:
+                            if a_feature_style[1] == b_feature_style[1]:
+                                pair_bool = False
+                                item_pairs.append((a_feat[0], b_feat[0], pair_bool))
+                        else:
+                            pair_cat -= 1  # die category_ids der annos gehen von 1-13 bei den preds von 0-12
+                            if pair_cat == a_feat[1]:
+                                if a_feature_style[1] == b_feature_style[1]:
+                                    pair_bool = True
+                                    item_pairs.append((a_feat[0], b_feat[0], pair_bool))
 
-        if check_cat_duplicates(a_cat_list) and check_cat_duplicates(b_cat_list):
-            a_annos_list = add_style_to_cat(a_cat_list, a_style_cat_list)
-            b_annos_list = add_style_to_cat(b_cat_list, b_style_cat_list)
-
-            a_item_list = []
-            for annos, features in zip(a_annos_list, a_feature_list):
-                a_item_list.append((annos, features))
-
-            b_item_list = []
-            for annos, features in zip(b_annos_list, b_feature_list):
-                b_item_list.append((annos, features))
-
-            for a_item in a_item_list:
-                for b_item in b_item_list:
-                    if a_item[0][0] == b_item[0][0] and a_item[0][1] == b_item[0][1]:
-                        # item ((cat, style), feature)
-                        pair_bool = count % 2 == 0
-                        pairs_pred_instances_features.append((a_item, b_item, pair_bool, pair[0], pair[1]))
-        count += 1
-
-    # dumps list with pairs [(((a_cat, a_style), a_feature), ((b_cat, b_style), b_feature), pair_bool), ...]
-    with open(target_path, 'wb') as f:
-        pickle.dump(pairs_pred_instances_features, f)
+    with open(target, 'wb') as f:
+        pickle.dump(item_pairs, f)
         f.close()
 
 
 def main():
-    # os.environ["CUDA_VISIBLE_DEVICES"] = ""
-
     parser = argparse.ArgumentParser()
     parser.add_argument('-p',
                         '--pairs',
@@ -100,28 +100,29 @@ def main():
                         type=str,
                         default=os.path.join('data', 'processed', 'train_pairs.pkl'))
     parser.add_argument('-d',
-                        '--feat_dir',
+                        '--feat_dict',
                         help='path to features directory',
                         type=str,
-                        default=os.path.join('data', 'results', 'pooled_features', 'train'))
+                        default=os.path.join('data', 'results', 'train_feature_index_class_dict.pkl'))
     parser.add_argument('-j',
                         '--json_dir',
                         help='path to json directory',
                         type=str,
                         default=os.path.join('data', 'raw', 'train', 'annos'))
     parser.add_argument('-t',
-                        '--target_path',
-                        help='path to target',
+                        '--target',
+                        help='path to target file',
                         type=str,
-                        default=os.path.join('data', 'processed', 'train_item_level_pairs.pkl'))
+                        default=os.path.join('data',
+                                             'results', 'final_training_item_pairs', 'train_item_pairs.pkl'))
     args = parser.parse_args()
 
     pairs_file_path = args.pairs
-    feature_dir_path = args.feat_dir
+    feature_dir_path = args.feat_dict
     json_dir_path = args.json_dir
-    target_path = args.target_path
+    target = args.target
 
-    make_item_level_pairs(pairs_file_path, feature_dir_path, json_dir_path, target_path)
+    make_item_pairs(feature_dir_path, json_dir_path, target, pairs_file_path)
 
 
 if __name__ == '__main__':
