@@ -19,14 +19,6 @@ from src.data.make_dataset import MakeDataset
 from src.models.matching_network import MatchingNet
 
 
-# TODO:
-#  Training loop
-#  scheduler:
-#  LR start at 0.02 -> decreased by 0.01
-#                   -> first time after 8 epochs
-#                   -> then 11 epochs
-#                   -> terminates at 12 epochs
-
 def get_transform():
     custom_transforms = [torchvision.transforms.Resize(800),
                          torchvision.transforms.ToTensor()]
@@ -48,7 +40,7 @@ train_batch_size = 128
 train_shuffle_dl = True
 # num_workers_dl = 4
 num_workers_dl = 0
-num_epochs = 130
+num_epochs = 20
 lr = 0.02
 momentum = 0.9
 weight_decay = 0.005  # 0.00001

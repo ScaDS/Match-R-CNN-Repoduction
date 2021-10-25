@@ -10,7 +10,6 @@ Reproducing the fashion image categorization and retrieval baseline approach fro
 * download deepfashion2 dataset
 * run src/data/split_dataset.py on train dataset
 * run src/data/deepfashion2_to_coco.py with train, validation and test dataset
-* run src/data/create_all_pairs.py with train, validation and test dataset
   
 ### Train feature-network
 * run src/models/train_feature_network.py with train dataset

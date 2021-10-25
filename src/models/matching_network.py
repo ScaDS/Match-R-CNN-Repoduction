@@ -1,6 +1,6 @@
 import torch
-from torch.nn import Module, Linear, BatchNorm1d, Softmax, Dropout, Conv2d, Conv1d
-import torch.nn.functional as F
+from torch.nn import Module, Linear, BatchNorm1d, Softmax, Conv2d, Dropout2d
+
 
 
 # TODO:
@@ -29,14 +29,19 @@ class FeatureExtractor(Module):
         self.conv2 = Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1)
         self.conv3 = Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1)
         self.conv4 = Conv2d(in_channels=256, out_channels=1024, kernel_size=3, padding=1)
+        self.dropout = Dropout2d(p=0.4)
         self.fc = Linear(in_features=1024, out_features=256)
         self.batch_norm = BatchNorm1d(num_features=256)
 
     def forward(self, x):
         out = torch.relu(self.conv1(x))
+        out = self.dropout(out)
         out = torch.relu(self.conv2(out))
+        out = self.dropout(out)
         out = torch.relu(self.conv3(out))
+        out = self.dropout(out)
         out = torch.relu(self.conv4(out))
+        out = self.dropout(out)
         out = (torch.relu(out.mean([2, 3])))  # mean does global avg pooling
         out = out.view(-1, 1024)
         out = self.fc(out)
