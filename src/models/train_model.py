@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import pickle
 from os import listdir
@@ -47,7 +48,7 @@ train_batch_size = 128
 train_shuffle_dl = True
 # num_workers_dl = 4
 num_workers_dl = 0
-num_epochs = 20
+num_epochs = 130
 lr = 0.02
 momentum = 0.9
 weight_decay = 0.005  # 0.00001
@@ -160,10 +161,13 @@ def training_loop(n_epochs, opt, mod, loss_function, trainloader, validationload
     # recall = correct_true / target_true
     # precision = correct_true / predicted_true
 
+    now = datetime.now()
+    dt_string = now.strftime("%d-%m-%Y_%H-%M-%S")
+
     plt.plot(train_loss_values, 'r', label='train_loss')
     plt.plot(validation_loss_values, 'b', label='validation_loss')
     plt.legend(loc="upper right")
-    plt.savefig('test_test_06.png')
+    plt.savefig(dt_string + '_epochs:' + str(n_epochs) + '.png')
 
 
 def main():
