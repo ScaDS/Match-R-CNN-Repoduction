@@ -3,6 +3,7 @@ import json
 import os
 import pickle
 from pathlib import Path
+from random import shuffle
 from typing import Tuple, List
 from itertools import chain
 from tqdm import tqdm
@@ -125,9 +126,21 @@ def main():
         with open(positive_pkl, 'wb') as f:
             pickle.dump(positive_pairs, f)
 
-    negative_pairs = create_negative_pairs(coco_file, shop, user, positive_pairs)
-    with open(os.path.join('data', 'processed', args.set + '_negative_pairs.pkl'), 'wb') as f:
-        pickle.dump(negative_pairs, f)
+    # negative_pairs = create_negative_pairs(coco_file, shop, user, positive_pairs)
+    # with open(os.path.join('data', 'processed', args.set + '_negative_pairs.pkl'), 'wb') as f:
+    #     pickle.dump(negative_pairs, f)
+
+    negative_pkl = Path(os.path.join('data', 'processed', args.set + '_negative_pairs.pkl'))
+    if negative_pkl.is_file():
+        with open(negative_pkl, 'rb') as f:
+            negative_pairs = pickle.load(f)
+    else:
+        negative_pairs = create_negative_pairs(coco_file, shop, user, positive_pairs)
+        with open(negative_pkl, 'wb') as f:
+            pickle.dump(negative_pairs, f)
+
+    shuffle(positive_pairs)
+    shuffle(negative_pairs)
 
     training_pairs = list(chain(*zip(positive_pairs, negative_pairs)))
     with open(os.path.join('data', 'processed', args.set + '_pairs.pkl'), 'wb') as f:

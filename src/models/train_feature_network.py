@@ -117,12 +117,3 @@ if __name__ == '__main__':
     main()
 
 
-# if __name__ == "__main__":
-#     launch(
-#         main,
-#         2,
-#         num_machines=1,
-#         machine_rank=0,
-#         dist_url='auto',
-#         args=(),
-#     )

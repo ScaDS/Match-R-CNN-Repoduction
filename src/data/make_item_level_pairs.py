@@ -72,6 +72,7 @@ def make_item_pairs(feature_dict_path, annos_dir, target, pairs_file_path):
         if check_cat_duplicates([t[1] for t in a_features]) and check_cat_duplicates([t[1] for t in b_features]):
             for a_feat in a_features:
                 for b_feat in b_features:
+                    # if a_feat[1] == b_feat[1] == 0:   # um nur auf short sleeve top zu filtern
                     if a_feat[1] == b_feat[1]:
                         a_feature_style = add_style(int(a_feat[1]), a_style_cat_list)
                         b_feature_style = add_style(int(b_feat[1]), b_style_cat_list)
@@ -98,23 +99,24 @@ def main():
                         '--pairs',
                         help='path to pairs pickle file',
                         type=str,
-                        default=os.path.join('data', 'processed', 'train_pairs.pkl'))
+                        default=os.path.join('data', 'processed', 'validation_pairs.pkl'))
     parser.add_argument('-d',
                         '--feat_dict',
                         help='path to features directory',
                         type=str,
-                        default=os.path.join('data', 'results', 'train_feature_index_class_dict.pkl'))
+                        default=os.path.join('data', 'results', 'validation_feature_index_class_dict.pkl'))
     parser.add_argument('-j',
                         '--json_dir',
                         help='path to json directory',
                         type=str,
-                        default=os.path.join('data', 'raw', 'train', 'annos'))
+                        default=os.path.join('data', 'raw', 'validation', 'annos'))
     parser.add_argument('-t',
                         '--target',
                         help='path to target file',
                         type=str,
                         default=os.path.join('data',
-                                             'results', 'final_training_item_pairs', 'train_item_pairs.pkl'))
+                                             'results', 'final_training_item_pairs',
+                                             'short_top_validation_item_pairs.pkl'))
     args = parser.parse_args()
 
     pairs_file_path = args.pairs

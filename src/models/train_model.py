@@ -1,8 +1,5 @@
 from datetime import datetime
 import os
-import pickle
-from os import listdir
-from os.path import join, isfile
 
 import numpy as np
 import torch
@@ -17,6 +14,9 @@ import torch.multiprocessing
 from src.data.make_dataset import MakeDataset
 
 from src.models.matching_network import MatchingNet
+
+# from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import average_precision_score
 
 
 def get_transform():
@@ -35,15 +35,14 @@ train_features_path = os.path.join('data', 'results', 'pooled_features', 'train'
 validation_pairs_path = os.path.join('data', 'results', 'final_training_item_pairs', 'validation_item_pairs.pkl')
 validation_features_path = os.path.join('data', 'results', 'pooled_features', 'validation')
 
-
 train_batch_size = 128
 train_shuffle_dl = True
 # num_workers_dl = 4
 num_workers_dl = 0
-num_epochs = 20
+num_epochs = 12
 lr = 0.02
 momentum = 0.9
-weight_decay = 0.005  # 0.00001
+weight_decay = 0.00001
 
 print("Torch version:", torch.__version__)
 
@@ -95,6 +94,10 @@ def training_loop(n_epochs, opt, mod, loss_function, trainloader, validationload
 
     train_loss_values = []
     validation_loss_values = []
+    ap_list = []
+
+    y_true = np.array([])
+    y_scores = np.array([])
 
     for epoch in range(1, n_epochs + 1):
         loss_train = 0.0
@@ -125,15 +128,12 @@ def training_loop(n_epochs, opt, mod, loss_function, trainloader, validationload
                 feat2 = torch.cat([torch.unsqueeze(f2, 0) for f2 in feature2], 0).to(device)
                 anno = torch.cat([torch.unsqueeze(a, 0) for a in annotation]).to(device)
                 outputs = mod(feat1, feat2)
+
                 loss = loss_function(outputs, anno.squeeze(1))
                 loss_val += loss.item() * ((feat1.size(0) + feat2.size(0)) / 2)
 
-                # predicted_classes = torch.argmax(outputs, dim=1) == 0
-                # target_classes = anno
-                # target_true += torch.sum(target_classes == 0).float()
-                # predicted_true += torch.sum(predicted_classes).float()
-                # correct_true += torch.sum(
-                #     predicted_classes == target_classes * predicted_classes == 0).float()
+                y_true = np.append(y_true, anno.to('cpu'))
+                y_scores = np.append(y_scores, outputs.to('cpu'))
 
         print(f'Epoch {epoch + 1} \t\t '
               f'Training Loss: {loss_train / len(train_loader)} \t\t '
@@ -147,19 +147,30 @@ def training_loop(n_epochs, opt, mod, loss_function, trainloader, validationload
         train_loss_values.append(loss_train / len(trainloader))
         validation_loss_values.append(loss_val / len(validation_loader))
 
+        am_y_scores = np.array([])
+
+        for i, k in zip(y_scores[0::2], y_scores[1::2]):
+            t = torch.tensor([i, k])
+            am_y_scores = np.append(am_y_scores, torch.argmax(t, dim=0))
+
+        ap = average_precision_score(y_true, am_y_scores)
+        ap_list.append(ap)
+        print('average precision: ' + str(ap))
+
         if epoch == 9 or epoch == 11:
             opt.param_groups[0]['lr'] = opt.param_groups[0]['lr'] * 0.1
 
-    # recall = correct_true / target_true
-    # precision = correct_true / predicted_true
 
     now = datetime.now()
     dt_string = now.strftime("%d-%m-%Y_%H-%M-%S")
 
     plt.plot(train_loss_values, 'r', label='train_loss')
     plt.plot(validation_loss_values, 'b', label='validation_loss')
+    # plt.plot(ap_list, 'g', label='average_precision')
     plt.legend(loc="upper right")
-    plt.savefig(dt_string + '_epochs:' + str(n_epochs) + '.png')
+    plt.xlabel("Epochen")
+    plt.ylabel("Fehler")
+    plt.savefig(dt_string + '_dropout_0_2'  + '.png')
 
 
 def main():

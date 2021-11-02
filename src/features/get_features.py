@@ -18,7 +18,6 @@ from tqdm import tqdm
 def get_features(images_list, model):
 
     with torch.no_grad():
-        # images = ImageList.from_tensors(images_list, size_divisibility=32).to('cuda')
         images = model.preprocess_image(images_list)
         features = model.backbone(images.tensor)
         proposals, _ = model.proposal_generator(images, features)
