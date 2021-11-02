@@ -1,6 +1,5 @@
 import json
 import os
-import settings
 
 from PIL import Image
 import numpy as np
@@ -13,12 +12,12 @@ parser.add_argument('-s',
                     help='choose between train, validation and test',
                     choices=['train', 'validation', 'test'],
                     nargs='?',
-                    default='test')
+                    default='validation')
 parser.add_argument('-d',
                     '--dest',
                     help='output dir',
                     type=str,
-                    default=os.path.join(settings.DATA_DIR, 'processed'))
+                    default=os.path.join('data', 'processed'))
 args = parser.parse_args()
 
 dataset = {
@@ -42,11 +41,11 @@ for idx, e in enumerate(lst_name):
         'skeleton': []
     })
 
-all_files = os.listdir(os.path.join(settings.DATA_DIR, 'raw', args.set, 'image'))
+all_files = os.listdir(os.path.join('data', 'raw', args.set, 'image'))
 sub_index = 0  # the index of ground truth instance
 for file in tqdm(all_files):
-    json_name = os.path.join(settings.DATA_DIR, 'raw', args.set, 'annos', os.path.splitext(file)[0] + '.json')
-    image_name = os.path.join(settings.DATA_DIR, 'raw', args.set, 'image', file)
+    json_name = os.path.join('data', 'raw', args.set, 'annos', os.path.splitext(file)[0] + '.json')
+    image_name = os.path.join('data', 'raw', args.set, 'image', file)
     if int(os.path.splitext(file)[0]) >= 0:
         imag = Image.open(image_name)
         width, height = imag.size

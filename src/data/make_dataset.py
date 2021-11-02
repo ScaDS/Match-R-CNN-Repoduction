@@ -1,30 +1,38 @@
-# -*- coding: utf-8 -*-
-import click
-import logging
-from pathlib import Path
-from dotenv import find_dotenv, load_dotenv
+import os
+import pickle
+
+import torch
+import torch.utils.data
 
 
-@click.command()
-@click.argument('input_filepath', type=click.Path(exists=True))
-@click.argument('output_filepath', type=click.Path())
-def main(input_filepath, output_filepath):
-    """ Runs data processing scripts to turn raw data from (../raw) into
-        cleaned data ready to be analyzed (saved in ../processed).
-    """
-    logger = logging.getLogger(__name__)
-    logger.info('making final data set from raw data')
+class MakeDataset(torch.utils.data.Dataset):
+    """ Dataset to get pairwise trained features"""
 
+    def __init__(self, item_pairs_list, features_dir, transform=None):
+        with open(item_pairs_list, 'rb') as f:
+            self.item_pairs_list = pickle.load(f)
+            f.close
+        self.features_dir = features_dir
+        self.transform = transform
 
-if __name__ == '__main__':
-    log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    logging.basicConfig(level=logging.INFO, format=log_fmt)
+    def __len__(self):
+        return len(self.item_pairs_list)
 
-    # not used in this stub but often useful for finding various files
-    project_dir = Path(__file__).resolve().parents[2]
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
 
-    # find .env automagically by walking up directories until it's found, then
-    # load up the .env entries as environment variables
-    load_dotenv(find_dotenv())
+        pair = self.item_pairs_list[idx]
+        with open(os.path.join(self.features_dir, pair[0] + '.pkl'), 'rb') as f:
+            feature_1 = pickle.load(f)
+            f.close()
+        with open(os.path.join(self.features_dir, pair[1] + '.pkl'), 'rb') as f:
+            feature_2 = pickle.load(f)
+            f.close()
 
-    main()
+        target = torch.tensor([1])
+        if pair[2]:
+            target = torch.tensor([0])
+        my_annotation = target
+
+        return feature_1[0], feature_2[0], my_annotation
